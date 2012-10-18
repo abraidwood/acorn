@@ -438,10 +438,17 @@
 
   function skipLineComment() {
     var start = tokPos;
-    tokPos += 2;
-    while (tokPos < inputLen && !newline.test(input.charAt(tokPos))) ++tokPos;
+    var ch = input.charCodeAt(tokPos+=2);
+    while (tokPos < inputLen && ch !== 10 && ch !== 13 && ch !== 8232 && ch !== 8329) {
+      ++tokPos;
+      ch = input.charCodeAt(tokPos);
+    }
     if (options.trackComments)
-      (tokComments || (tokComments = [])).push(input.slice(start, tokPos));
+      if(tokComments) {
+        tokComments.push(input.slice(start, tokPos)); 
+      } else {
+        tokComments = [input.slice(start, tokPos)];
+      }
   }
 
   // Called at the start of the parse and after every token. Skips
