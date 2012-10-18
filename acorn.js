@@ -503,67 +503,75 @@
     if (isIdentifierStart(code) || code === 92 /* '\' */) return readWord();
     var next = input.charCodeAt(tokPos+1);
 
-    switch(code) {
-      // The interpretation of a dot depends on whether it is followed
-      // by a digit.
-    case 46: // '.'
+    // The interpretation of a dot depends on whether it is followed
+    // by a digit.
+    if(code === 46) { // '.'
       if (next >= 48 && next <= 57) return readNumber(code);
       ++tokPos;
       return finishToken(_dot);
-
-      // Punctuation tokens.
-    case 40: ++tokPos; return finishToken(_parenL);
-    case 41: ++tokPos; return finishToken(_parenR);
-    case 59: ++tokPos; return finishToken(_semi);
-    case 44: ++tokPos; return finishToken(_comma);
-    case 91: ++tokPos; return finishToken(_bracketL);
-    case 93: ++tokPos; return finishToken(_bracketR);
-    case 123: ++tokPos; return finishToken(_braceL);
-    case 125: ++tokPos; return finishToken(_braceR);
-    case 58: ++tokPos; return finishToken(_colon);
-    case 63: ++tokPos; return finishToken(_question);
+    }
+        // Punctuation tokens.
+    else if(code === 40) { ++tokPos; return finishToken(_parenL);}
+    else if(code === 41) { ++tokPos; return finishToken(_parenR);}
+    else if(code === 59) { ++tokPos; return finishToken(_semi);}
+    else if(code === 44) { ++tokPos; return finishToken(_comma);}
+    else if(code === 91) { ++tokPos; return finishToken(_bracketL);}
+    else if(code === 93) { ++tokPos; return finishToken(_bracketR);}
+    else if(code === 123) { ++tokPos; return finishToken(_braceL);}
+    else if(code === 125) { ++tokPos; return finishToken(_braceR);}
+    else if(code === 58) { ++tokPos; return finishToken(_colon);}
+    else if(code === 63) { ++tokPos; return finishToken(_question);}
 
       // '0x' is a hexadecimal number.
-    case 48: // '0'
+    else if(code === 48) { // '0'
       if (next === 120 || next === 88) return readHexNumber();
-      // Anything else beginning with a digit is an integer, octal
-      // number, or float.
-    case 49: case 50: case 51: case 52: case 53: case 54: case 55: case 56: case 57: // 1-9
       return readNumber(code);
-
+    }
+      // Anything else beginning with a digit (1-9) is an integer, octal
+      // number, or float.
+    else if(code === 49) {return readNumber(code);}
+    else if(code === 50) {return readNumber(code);} 
+    else if(code === 51) {return readNumber(code);} 
+    else if(code === 52) {return readNumber(code);}
+    else if(code === 53) {return readNumber(code);}
+    else if(code === 54) {return readNumber(code);}
+    else if(code === 55) {return readNumber(code);} 
+    else if(code === 56) {return readNumber(code);} 
+    else if(code === 57) {return readNumber(code);} 
+      
       // Quotes produce strings.
-    case 34: case 39: // '"', "'"
-      return readString(code);
+    else if(code === 34 || code === 39) { // '"', "'"
+        return readString(code);
+    }
+      // Operators are parsed inline in tiny state machines. '=' (61) is
+      // often referred to. `finishOp` simply skips the amount of
+      // characters it is given as second argument, and returns a token
+      // of the type given by its first argument.
 
-    // Operators are parsed inline in tiny state machines. '=' (61) is
-    // often referred to. `finishOp` simply skips the amount of
-    // characters it is given as second argument, and returns a token
-    // of the type given by its first argument.
-
-    case 47: // '/'
+    else if(code === 47) { // '/'
       if (tokRegexpAllowed) {++tokPos; return readRegexp();}
       if (next === 61) return finishOp(_assign, 2);
       return finishOp(_slash, 1);
-
-    case 37: case 42: // '%*'
-      if (next === 61) return finishOp(_assign, 2);
-      return finishOp(_bin10, 1);
-
-    case 124: case 38: // '|&'
-      if (next === code) return finishOp(code === 124 ? _bin1 : _bin2, 2);
-      if (next === 61) return finishOp(_assign, 2);
-      return finishOp(code === 124 ? _bin3 : _bin5, 1);
-
-    case 94: // '^'
-      if (next === 61) return finishOp(_assign, 2);
-      return finishOp(_bin4, 1);
-
-    case 43: case 45: // '+-'
-      if (next === code) return finishOp(_incdec, 2);
-      if (next === 61) return finishOp(_assign, 2);
-      return finishOp(_plusmin, 1);
-
-    case 60: case 62: // '<>'
+    }
+    else if(code === 37 || code === 42) { // '%', '*'
+        if (next === 61) return finishOp(_assign, 2);
+        return finishOp(_bin10, 1);
+    }
+    else if(code === 124 || code === 38) { // '|', '&'
+        if (next === code) return finishOp(code === 124 ? _bin1 : _bin2, 2);
+        if (next === 61) return finishOp(_assign, 2);
+        return finishOp(code === 124 ? _bin3 : _bin5, 1);
+    }
+    else if(code === 94) { // '^'
+        if (next === 61) return finishOp(_assign, 2);
+        return finishOp(_bin4, 1);
+    }
+    else if(code === 43 || code === 45) { // '+', '-' 
+        if (next === code) return finishOp(_incdec, 2);
+        if (next === 61) return finishOp(_assign, 2);
+        return finishOp(_plusmin, 1);
+    }
+    else if(code === 60 || code === 62) { // '<', '>'
       var size = 1;
       if (next === code) {
         size = code === 62 && input.charCodeAt(tokPos+2) === 62 ? 3 : 2;
@@ -573,21 +581,20 @@
       if (next === 61)
         size = input.charCodeAt(tokPos+2) === 61 ? 3 : 2;
       return finishOp(_bin7, size);
-
-    case 61: case 33: // '=!'
+    }
+    else if(code === 61 || code === 33) { // '=', '!'
       if (next === 61) return finishOp(_bin6, input.charCodeAt(tokPos+2) === 61 ? 3 : 2);
       return finishOp(code === 61 ? _eq : _prefix, 1);
-
-    case 126: // '~'
-      if (next === 61) return finishOp(_assign, 2);
-      return finishOp(_prefix, 1);
     }
-
-    // If we are here, we either found a non-ASCII identifier
-    // character, or something that's entirely disallowed.
-    var ch = String.fromCharCode(code);
-    if (ch === "\\" || nonASCIIidentifierStart.test(ch)) return readWord();
-    raise(tokPos, "Unexpected character '" + ch + "'");
+    else if(code === 126) { // '~'
+        if (next === 61) return finishOp(_assign, 2);
+        return finishOp(_prefix, 1);
+    } else {
+      // If we are here, we either found a non-ASCII identifier
+      // character, or something that's entirely disallowed.
+      if (code === 91 || nonASCIIidentifierStart.test(String.fromCharCode(code))) return readWord();
+      raise(tokPos, "Unexpected character '" + String.fromCharCode(code) + "'");
+    }
   }
 
   function finishOp(type, size) {
