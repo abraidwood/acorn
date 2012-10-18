@@ -547,7 +547,7 @@
     var code = input.charCodeAt(tokPos);
     // Identifier or keyword. '\uXXXX' sequences are allowed in
     // identifiers, so '\' also dispatches to that.
-    if (isIdentifierStart(code) || code === 92 /* '\' */) return readWord();
+    if (isIdentifierStart(code) || code === 92) return readWord(); // '\'
     var next = input.charCodeAt(tokPos+1);
 
     // The interpretation of a dot depends on whether it is followed
@@ -692,8 +692,8 @@
     var start = tokPos, total = 0;
     for (;;) {
       var code = input.charCodeAt(tokPos), val;
-      if (code >= 97) val = code - 97 + 10; // a
-      else if (code >= 65) val = code - 65 + 10; // A
+      if (code >= 97) val = code - 87;//97 + 10; // a
+      else if (code >= 65) val = code - 55;//65 + 10; // A
       else if (code >= 48 && code <= 57) val = code - 48; // 0-9
       else val = Infinity;
       if (val >= radix) break;
