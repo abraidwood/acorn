@@ -224,6 +224,12 @@
 
   var _in = {keyword: "in", binop: 7, beforeExpr: true};
 
+  // Added to allow keyword predicate function faster
+  var _instanceof = {keyword: "instanceof", binop: 7}
+  var _typeof = {keyword: "typeof", prefix: true};
+  var _void = {keyword: "void", prefix: true};
+  var _delete = {keyword: "delete", prefix: true};
+
   // Map keyword names to token types.
 
   var keywordTypes = {"break": _break, "case": _case, "catch": _catch,
@@ -232,10 +238,10 @@
                       "function": _function, "if": _if, "return": _return, "switch": _switch,
                       "throw": _throw, "try": _try, "var": _var, "while": _while, "with": _with,
                       "null": _null, "true": _true, "false": _false, "new": _new, "in": _in,
-                      "instanceof": {keyword: "instanceof", binop: 7},
-                      "typeof": {keyword: "typeof", prefix: true},
-                      "void": {keyword: "void", prefix: true},
-                      "delete": {keyword: "delete", prefix: true}};
+                      "instanceof": _instanceof,
+                      "typeof": _typeof,
+                      "void": _void,
+                      "delete": _delete};
 
   // Punctuation token types. Again, the `type` property is purely for debugging.
 
@@ -317,6 +323,47 @@
     return new Function("str", f);
   }
 
+  function makePredicate2(words) {
+    words = words.split(" ");
+    var f = "", cats = [];
+    out: for (var i = 0; i < words.length; ++i) {
+      for (var j = 0; j < cats.length; ++j)
+        if (cats[j][0].length == words[i].length) {
+          cats[j].push(words[i]);
+          continue out;
+        }
+      cats.push([words[i]]);
+    }
+    function compareTo(arr) {
+      if (arr.length == 1) return f += "return str === " + JSON.stringify(arr[0]) + " && _"+arr[0]+";";
+      f += "switch(str){";
+      for (var i = 0; i < arr.length; ++i) {
+        var str = arr[i];
+        f += "case " + JSON.stringify(str) + ": return _"+str+";";
+      }
+      f += "}return false;";
+    }
+
+    // When there are more than three length categories, an outer
+    // switch first dispatches on the lengths, to save on comparisons.
+
+    if (cats.length > 3) {
+      cats.sort(function(a, b) {return b.length - a.length;});
+      f += "switch(str.length){";
+      for (var i = 0; i < cats.length; ++i) {
+        var cat = cats[i];
+        f += "case " + cat[0].length + ":";
+        compareTo(cat);
+      }
+      f += "}";
+
+    // Otherwise, simply generate a flat `switch` statement.
+
+    } else {
+      compareTo(words);
+    }
+    return eval("(function(str) {" + f + "})");
+  }
   // The ECMAScript 3 reserved word list.
 
   var isReservedWord3 = makePredicate("abstract boolean byte char class double enum export extends final float goto implements import int interface long native package private protected public short static super synchronized throws transient volatile");
@@ -335,7 +382,7 @@
 
   // And the keywords.
 
-  var isKeyword = makePredicate("break case catch continue debugger default do else finally for function if return switch throw try var while with null true false instanceof typeof void delete new in");
+  var getKeywordType = makePredicate2("break case catch continue debugger default do else finally for function if return switch throw try var while with null true false instanceof typeof void delete new in");
 
   // ## Character categories
 
@@ -802,7 +849,8 @@
     var word = readWord1();
     var type = _name;
     if (!containsEsc) {
-      if (isKeyword(word)) type = keywordTypes[word];
+      var keywordType = getKeywordType(word);
+      if (keywordType) type = keywordType;
       else if (options.forbidReserved &&
                (options.ecmaVersion === 3 ? isReservedWord3 : isReservedWord5)(word) ||
                strict && isStrictReservedWord(word))
