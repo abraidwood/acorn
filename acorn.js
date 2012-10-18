@@ -1458,7 +1458,7 @@
     if (eat(_dot)) {
       var node = startNodeFrom(base);
       node.object = base;
-      node.property = parseIdent(true);
+      node.property = parseIdentLiberal();
       node.computed = false;
       return parseSubscripts(finishNode(node, "MemberExpression"), noCalls);
     } else if (eat(_bracketL)) {
@@ -1590,7 +1590,7 @@
 
   function parsePropertyName() {
     if (tokType === _num || tokType === _string) return parseExprAtom();
-    return parseIdent(true);
+    return parseIdentLiberal();
   }
 
   // Parse a function declaration or literal (depending on the
@@ -1655,9 +1655,15 @@
   // when parsing properties), it will also convert keywords into
   // identifiers.
 
-  function parseIdent(liberal) {
+  function parseIdent() {
     var node = startNode();
-    node.name = tokType === _name ? tokVal : (liberal && tokType.keyword) || unexpected();
+    node.name = tokType === _name ? tokVal : unexpected();
+    next();
+    return finishNode(node, "Identifier");
+  }
+  function parseIdentLiberal() {
+    var node = startNode();
+    node.name = tokType === _name ? tokVal : tokType.keyword || unexpected();
     next();
     return finishNode(node, "Identifier");
   }
