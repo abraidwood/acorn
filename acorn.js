@@ -593,13 +593,13 @@
     var content = "", escaped, inClass, start = tokPos;
     for (;;) {
       if (tokPos >= inputLen) raise(start, "Unterminated regular expression");
-      var ch = input.charAt(tokPos);
-      if (newline.test(ch)) raise(start, "Unterminated regular expression");
+      var ch = input.charCodeAt(tokPos);
+      if (ch === 13 || ch === 10 || ch === 8232 || ch === 8329) raise(start, "Unterminated regular expression");
       if (!escaped) {
-        if (ch === "[") inClass = true;
-        else if (ch === "]" && inClass) inClass = false;
-        else if (ch === "/" && !inClass) break;
-        escaped = ch === "\\";
+        if (ch === 91) inClass = true; // '[''
+        else if (ch === 93 && inClass) inClass = false; // ']'
+        else if (ch === 47 && !inClass) break; // '/'
+        escaped = ch === 92; // '\'
       } else escaped = false;
       ++tokPos;
     }
@@ -608,7 +608,15 @@
     // Need to use `readWord1` because '\uXXXX' sequences are allowed
     // here (don't ask).
     var mods = readWord1();
-    if (mods && !/^[gmsiy]*$/.test(mods)) raise(start, "Invalid regexp flag");
+
+    if(mods) {
+      if(!mods.split("").every(function(ch) {
+        ch = ch.charCodeAt(0);
+        return (ch < 122 && ch > 102 && (ch === 103 || ch === 105 || ch === 109 || ch === 115 || ch === 121));
+      })) {
+         raise(start, "Invalid regexp flag");
+      }
+    }
     return finishToken(_regexp, new RegExp(content, mods));
   }
 
