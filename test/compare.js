@@ -31,8 +31,8 @@ var setupBenchmarks,
     suite;
 
 parsers = [
-    'Esprima',
-    'parse-js',
+    // 'Esprima',
+    // 'parse-js',
     'Acorn'
 ];
 
@@ -275,7 +275,6 @@ if (typeof window !== 'undefined') {
                         var syntax = window.acorn.parse(source);
                         window.tree.push(syntax.body.length);
                     };
-                    break;
                     break;
                 default:
                     throw 'Unknown parser type ' + parser;
