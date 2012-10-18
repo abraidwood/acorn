@@ -451,16 +451,19 @@
   function skipSpace() {
     tokComments = null;
     while (tokPos < inputLen) {
-      var ch = input.charAt(tokPos);
-      if (ch === "/") {
-        var nextCh = input.charAt(tokPos+1);
-        if (nextCh === "*") {
+      var ch = input.charCodeAt(tokPos);
+      if (ch === 47) { // '/'
+        var next = input.charCodeAt(tokPos+1);
+        if (next === 42) { // '*'
           skipBlockComment();
-        } else if (nextCh === "/") {
+        } else if (next === 47) { // '/'
           skipLineComment();
         } else break;
-      } else if (ch === " " || ch === '\t' || ch === "\n" || ch === "\r" || ch === "\f" ||
-                 ch === "\xa0" || ch === "\x0b" || (ch >= "\u1680" && nonASCIIwhitespace.test(ch))) {
+      } else if (ch < 14 && ch > 8) {
+        ++tokPos;
+      } else if (ch === 32 || ch === 160) { // ' ', '\xa0'
+        ++tokPos;
+      } else if (ch >= 5760 && (ch === 5760 || ch === 6158 || ch === 8239 || ch === 8287 || ch === 12288 || ch === 65279 || (ch >= 8192 && ch <= 8202))) {
         ++tokPos;
       } else {
         break;
