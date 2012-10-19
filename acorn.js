@@ -287,8 +287,8 @@
   function makePredicate(words) {
     words = words.split(" ");
     var f = "", cats = [];
-    out: for (var i = 0; i < words.length; ++i) {
-      for (var j = 0; j < cats.length; ++j)
+    out: for (var i = 0, leni = words.length; i < leni; ++i) {
+      for (var j = 0, lenj = cats.length; j < lenj; ++j)
         if (cats[j][0].length == words[i].length) {
           cats[j].push(words[i]);
           continue out;
@@ -298,7 +298,7 @@
     function compareTo(arr) {
       if (arr.length == 1) return f += "return str === " + JSON.stringify(arr[0]) + ";";
       f += "switch(str){";
-      for (var i = 0; i < arr.length; ++i) f += "case " + JSON.stringify(arr[i]) + ":";
+      for (var i = 0, leni = arr.length; i < leni; ++i) f += "case " + JSON.stringify(arr[i]) + ":";
       f += "return true}return false;";
     }
 
@@ -308,7 +308,7 @@
     if (cats.length > 3) {
       cats.sort(function(a, b) {return b.length - a.length;});
       f += "switch(str.length){";
-      for (var i = 0; i < cats.length; ++i) {
+      for (var i = 0, leni = cats.length; i < leni; ++i) {
         var cat = cats[i];
         f += "case " + cat[0].length + ":";
         compareTo(cat);
@@ -326,8 +326,8 @@
   function makePredicate2(words) {
     words = words.split(" ");
     var f = "", cats = [];
-    out: for (var i = 0; i < words.length; ++i) {
-      for (var j = 0; j < cats.length; ++j)
+    out: for (var i = 0, leni = words.length; i < leni; ++i) {
+      for (var j = 0, lenj = cats.length; j < lenj; ++j)
         if (cats[j][0].length == words[i].length) {
           cats[j].push(words[i]);
           continue out;
@@ -337,7 +337,7 @@
     function compareTo(arr) {
       if (arr.length == 1) return f += "return str === " + JSON.stringify(arr[0]) + " && _"+arr[0]+";";
       f += "switch(str){";
-      for (var i = 0; i < arr.length; ++i) {
+      for (var i = 0, leni = arr.length; i < leni; ++i) {
         var str = arr[i];
         f += "case " + JSON.stringify(str) + ": return _"+str+";";
       }
@@ -350,7 +350,7 @@
     if (cats.length > 3) {
       cats.sort(function(a, b) {return b.length - a.length;});
       f += "switch(str.length){";
-      for (var i = 0; i < cats.length; ++i) {
+      for (var i = 0, leni = cats.length; i < leni; ++i) {
         var cat = cats[i];
         f += "case " + cat[0].length + ":";
         compareTo(cat);
@@ -1079,7 +1079,7 @@
 
       // Verify that there is an actual destination to break or
       // continue to.
-      for (var i = 0; i < labels.length; ++i) {
+      for (var i = 0, leni = labels.length; i < leni; ++i) {
         var lab = labels[i];
         if (node.label == null || lab.name === node.label.name) {
           if (lab.kind != null && (isBreak || lab.kind === "loop")) break;
@@ -1247,7 +1247,7 @@
     default:
       var maybeName = tokVal, expr = parseExpression();
       if (starttype === _name && expr.type === "Identifier" && eat(_colon)) {
-        for (var i = 0; i < labels.length; ++i)
+        for (var i = 0, leni = labels.length; i < leni; ++i)
           if (labels[i].name === maybeName) raise(expr.start, "Label '" + maybeName + "' is already declared");
         var kind = tokType.isLoop ? "loop" : tokType === _switch ? "switch" : null;
         labels.push({name: maybeName, kind: kind});
@@ -1573,7 +1573,7 @@
       // init properties are also not allowed to be repeated.
 
       if (prop.key.type === "Identifier" && (strict || sawGetSet)) {
-        for (var i = 0; i < node.properties.length; ++i) {
+        for (var i = 0, leni = node.properties.length; i < leni; ++i) {
           var other = node.properties[i];
           if (other.key.name === prop.key.name) {
             var conflict = kind == other.kind || isGetSet && other.kind === "init" ||
@@ -1619,7 +1619,7 @@
     // are not repeated, and it does not try to bind the words `eval`
     // or `arguments`.
     if (strict || node.body.body.length && isUseStrict(node.body.body[0])) {
-      for (var i = node.id ? -1 : 0; i < node.params.length; ++i) {
+      for (var i = node.id ? -1 : 0, leni = node.params.length; i < leni; ++i) {
         var id = i < 0 ? node.id : node.params[i];
         if (isStrictReservedWord(id.name) || isStrictBadIdWord(id.name))
           raise(id.start, "Defining '" + id.name + "' in strict mode");
