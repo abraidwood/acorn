@@ -5,32 +5,64 @@
 	"use strict";
 
 	var fs = require('fs');
-	var acorn = require('../../acorn.js');
+	var config = require('./config.js');
 
-	var sourcesDir = '../3rdParty/';
-	var sources = require('./results.js').sources;
+	var prevResults = fs.existsSync(config.resultsFile) ? fs.readFileSync(config.resultsFile, 'utf8') : '';
+	var newResults = {};
+	var titles = [];
 
-	sources.forEach(function(source) {
-		source.text = fs.readFileSync(sourcesDir + source.name + '.js', 'utf8');
+	var resultsLines = prevResults === '' ? [] : prevResults.split('\n');
+	if(resultsLines.length > 0) {
+		titles = resultsLines.shift().split(',');
+	}
+
+	config.sources.forEach(function(source) {
+		source.text = fs.readFileSync(config.sourcesDir + '/' + source.name + '.js', 'utf8');
 		source.time = source.time || 1000000;
 	});
 
 	var Benchmark = require('benchmark');
 
 	var tree = [];
-	sources.forEach(function(source) {
+	config.sources.forEach(function(source) {
 		var benchmark = new Benchmark(source.name, function() {
 			var syntax = this.options.acorn.parse(this.options.source.text);
 			tree.push(syntax.body.length);
 		}, {
 			source: source,
-			acorn: acorn,
+			acorn: config.acorn,
+			maxTime: config.maxTime,
 			async: false,
 			onComplete: function() {
-				console.log(this);
+				if(titles.indexOf(source.name) === -1) {
+					titles.push(source.name);
+				}
+				newResults[source.name] = (this.stats.mean * 1000);
+				console.log(source.name);
 			}
 		});
 		benchmark.run();
 	});
 
+	resultsLines.unshift(titles.join(','));
+	resultsLines = resultsLines.map(function(line) {
+		var line = line.split(',');
+		line.length = titles.length;
+		return line.join(',');
+	});
+
+	var newLine = [];
+	titles.forEach(function(title, index) {
+		newLine[index] = newResults[title];
+	});
+	resultsLines.push(newLine.join(','));
+
+	console.log('#####');
+	console.log(resultsLines.shift().split(',').join('\t'));
+
+	resultsLines.forEach(function(line) {
+		console.log(line.split(',').map(function(item) {
+			return item ? Number(item).toFixed(1) : '-';
+		}).join('\t'));
+	});
 })();
