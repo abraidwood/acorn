@@ -26,11 +26,12 @@
 	var tree = [];
 	config.sources.forEach(function(source) {
 		var benchmark = new Benchmark(source.name, function() {
-			var syntax = this.options.acorn.parse(this.options.source.text);
+			var syntax = this.options.acorn.parse(this.options.source.text, this.options.acornOptions);
 			tree.push(syntax.body.length);
 		}, {
 			source: source,
 			acorn: config.acorn,
+			acornOptions: config.acornOptions,
 			maxTime: config.maxTime,
 			async: false,
 			onComplete: function() {
