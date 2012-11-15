@@ -672,17 +672,31 @@
   // were read, the integer value otherwise. When `len` is given, this
   // will return `null` unless the integer has exactly `len` digits.
 
-  function readInt(radix, len) {
+  function readDecimal() {
     var start = tokPos, total = 0;
     for (;;) {
       var code = input.charCodeAt(tokPos), val;
-      if (code >= 97) val = code - 97 + 10; // a
-      else if (code >= 65) val = code - 65 + 10; // A
-      else if (code >= 48 && code <= 57) val = code - 48; // 0-9
-      else val = Infinity;
-      if (val >= radix) break;
+      if (code >= 48 && code <= 57) val = code - 48; // 0-9
+      else break; // May be NaN ??
       ++tokPos;
-      total = total * radix + val;
+      total = total * 10 + val;
+    }
+    if (tokPos === start) return null;
+
+    return total;    
+  }
+
+  function readInt16(len) {
+    var start = tokPos, total = 0;
+    for (;;) {
+      var code = input.charCodeAt(tokPos), val;
+      if (code >= 48 && code <= 57) val = code - 48; // 0-9
+      else if (code >= 97) val = code - 87;//97 + 10; // a + 10
+      else if (code >= 65) val = code - 55;//65 + 10; // A + 10
+      else break;
+      if (val >= 16) break;
+      ++tokPos;
+      total = total * 16 + val;
     }
     if (tokPos === start || len != null && tokPos - start !== len) return null;
 
@@ -691,7 +705,7 @@
 
   function readHexNumber() {
     tokPos += 2; // 0x
-    var val = readInt(16);
+    var val = readInt16();
     if (val == null) raise(tokStart + 2, "Expected hexadecimal number");
     if (isIdentifierStart(input.charCodeAt(tokPos))) raise(tokPos, "Identifier directly after number");
     return finishToken(_num, val);
@@ -701,17 +715,17 @@
   
   function readNumber(ch) {
     var start = tokPos, isFloat = ch === ".";
-    if (!isFloat && readInt(10) == null) raise(start, "Invalid number");
+    if (!isFloat && readDecimal() == null) raise(start, "Invalid number");
     if (isFloat || input.charAt(tokPos) === ".") {
       var next = input.charAt(++tokPos);
       if (next === "-" || next === "+") ++tokPos;
-      if (readInt(10) === null && ch === ".") raise(start, "Invalid number");
+      if (readDecimal() === null && ch === ".") raise(start, "Invalid number");
       isFloat = true;
     }
     if (/e/i.test(input.charAt(tokPos))) {
       var next = input.charAt(++tokPos);
       if (next === "-" || next === "+") ++tokPos;
-      if (readInt(10) === null) raise(start, "Invalid number")
+      if (readDecimal() === null) raise(start, "Invalid number")
       isFloat = true;
     }
     if (isIdentifierStart(input.charCodeAt(tokPos))) raise(tokPos, "Identifier directly after number");
@@ -775,7 +789,7 @@
   // Used to read character escape sequences ('\x', '\u', '\U').
 
   function readHexChar(len) {
-    var n = readInt(16, len);
+    var n = readInt16(len);
     if (n === null) raise(tokStart, "Bad character escape sequence");
     return n;
   }
