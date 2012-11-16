@@ -489,7 +489,7 @@
 
   function readToken_46(code) { // '.'
     var next = input.charCodeAt(tokPos+1);
-    if (next >= 48 && next <= 57) return readNumber(String.fromCharCode(code));
+    if (next >= 48 && next <= 57) return readNumber(code);
     ++tokPos;
     return finishToken(_dot);
   }
@@ -573,7 +573,7 @@
       // Anything else beginning with a digit is an integer, octal
       // number, or float.
     case 49: case 50: case 51: case 52: case 53: case 54: case 55: case 56: case 57: // 1-9
-      return readNumber(String.fromCharCode(code));
+      return readNumber(code);
 
       // Quotes produce strings.
     case 34: case 39: // '"', "'"
@@ -713,18 +713,19 @@
 
   // Read an integer, octal integer, or floating-point number.
   
-  function readNumber(ch) {
-    var start = tokPos, isFloat = ch === ".";
-    if (!isFloat && readDecimal() == null) raise(start, "Invalid number");
-    if (isFloat || input.charAt(tokPos) === ".") {
-      var next = input.charAt(++tokPos);
-      if (next === "-" || next === "+") ++tokPos;
-      if (readDecimal() === null && ch === ".") raise(start, "Invalid number");
+  function readNumber(code) {
+    var start = tokPos, isFloat = code === 46, next; // '.'
+    if (!isFloat && readDecimal() === null) raise(start, "Invalid number");
+    if (isFloat || input.charCodeAt(tokPos) === 46) {
+      next = input.charCodeAt(++tokPos);
+      if (next === 43 || next === 45) ++tokPos;
+      if (readDecimal() === null && code === 46) raise(start, "Invalid number");
       isFloat = true;
     }
-    if (/e/i.test(input.charAt(tokPos))) {
-      var next = input.charAt(++tokPos);
-      if (next === "-" || next === "+") ++tokPos;
+    next = input.charCodeAt(tokPos);
+    if (next === 101 || next === 69) {
+      next = input.charCodeAt(++tokPos);
+      if (next === 43 || next === 45) ++tokPos;
       if (readDecimal() === null) raise(start, "Invalid number")
       isFloat = true;
     }
@@ -732,8 +733,8 @@
 
     var str = input.slice(start, tokPos), val;
     if (isFloat) val = parseFloat(str);
-    else if (ch !== "0" || str.length === 1) val = parseInt(str, 10);
-    else if (/[89]/.test(str) || strict) raise(start, "Invalid number");
+    else if (code !== 48 || str.length === 1) val = parseInt(str, 10);
+    else if (strict || /[89]/.test(str)) raise(start, "Invalid number");
     else val = parseInt(str, 8);
     return finishToken(_num, val);
   }
