@@ -281,8 +281,8 @@
 
   function makePredicate(words) {
     words = words.split(" ");
-    var f = "", cats = [];
-    out: for (var i = 0; i < words.length; ++i) {
+    var f = "", cats = [], i;
+    out: for (i = 0; i < words.length; ++i) {
       for (var j = 0; j < cats.length; ++j)
         if (cats[j][0].length == words[i].length) {
           cats[j].push(words[i]);
@@ -303,7 +303,7 @@
     if (cats.length > 3) {
       cats.sort(function(a, b) {return b.length - a.length;});
       f += "switch(str.length){";
-      for (var i = 0; i < cats.length; ++i) {
+      for (i = 0; i < cats.length; ++i) {
         var cat = cats[i];
         f += "case " + cat[0].length + ":";
         compareTo(cat);
@@ -659,7 +659,7 @@
       } else escaped = false;
       ++tokPos;
     }
-    var content = input.slice(start, tokPos);
+    content = input.slice(start, tokPos);
     ++tokPos;
     // Need to use `readWord1` because '\uXXXX' sequences are allowed
     // here (don't ask).
@@ -706,7 +706,7 @@
   function readHexNumber() {
     tokPos += 2; // 0x
     var val = readInt16();
-    if (val == null) raise(tokStart + 2, "Expected hexadecimal number");
+    if (val === null) raise(tokStart + 2, "Expected hexadecimal number");
     if (isIdentifierStart(input.charCodeAt(tokPos))) raise(tokPos, "Identifier directly after number");
     return finishToken(_num, val);
   }
@@ -726,7 +726,7 @@
     if (next === 101 || next === 69) {
       next = input.charCodeAt(++tokPos);
       if (next === 43 || next === 45) ++tokPos;
-      if (readDecimal() === null) raise(start, "Invalid number")
+      if (readDecimal() === null) raise(start, "Invalid number");
       isFloat = true;
     }
     if (isIdentifierStart(input.charCodeAt(tokPos))) raise(tokPos, "Identifier directly after number");
@@ -1037,7 +1037,7 @@
       first = false;
     }
     return finishNode(node, "Program");
-  };
+  }
 
   var loopLabel = {kind: "loop"}, switchLabel = {kind: "switch"};
 
@@ -1052,7 +1052,7 @@
     if (tokType === _slash)
       readToken(true);
 
-    var starttype = tokType, node = startNode();
+    var starttype = tokType, node = startNode(), i;
 
     // Most types of statements are recognized by the keyword they
     // start with. Many are trivial to parse, some require a bit of
@@ -1071,7 +1071,7 @@
 
       // Verify that there is an actual destination to break or
       // continue to.
-      for (var i = 0; i < labels.length; ++i) {
+      for (i = 0; i < labels.length; ++i) {
         var lab = labels[i];
         if (node.label == null || lab.name === node.label.name) {
           if (lab.kind != null && (isBreak || lab.kind === "loop")) break;
@@ -1108,15 +1108,16 @@
       labels.push(loopLabel);
       expect(_parenL);
       if (tokType === _semi) return parseFor(node, null);
+      var init;
       if (tokType === _var) {
-        var init = startNode();
+        init = startNode();
         next();
         parseVar(init, true);
         if (init.declarations.length === 1 && eat(_in))
           return parseForIn(node, init);
         return parseFor(node, init);
       }
-      var init = parseExpression(false, true);
+      init = parseExpression(false, true);
       if (eat(_in)) {checkLVal(init); return parseForIn(node, init);}
       return parseFor(node, init);
 
@@ -1242,7 +1243,7 @@
     default:
       var maybeName = tokVal, expr = parseExpression();
       if (starttype === _name && expr.type === "Identifier" && eat(_colon)) {
-        for (var i = 0; i < labels.length; ++i)
+        for (i = 0; i < labels.length; ++i)
           if (labels[i].name === maybeName) raise(expr.start, "Label '" + maybeName + "' is already declared");
         var kind = tokType.isLoop ? "loop" : tokType === _switch ? "switch" : null;
         labels.push({name: maybeName, kind: kind});
@@ -1282,7 +1283,7 @@
         oldStrict = strict;
         setStrict(strict = true);
       }
-      first = false
+      first = false;
     }
     if (strict && !oldStrict) setStrict(false);
     return finishNode(node, "BlockStatement");
@@ -1408,7 +1409,7 @@
         node.operator = tokVal;
         next();
         node.right = parseExprOp(parseMaybeUnary(noIn), prec, noIn);
-        var node = finishNode(node, /&&|\|\|/.test(node.operator) ? "LogicalExpression" : "BinaryExpression");
+        node = finishNode(node, /&&|\|\|/.test(node.operator) ? "LogicalExpression" : "BinaryExpression");
         return parseExprOp(node, minPrec, noIn);
       }
     }
@@ -1418,8 +1419,10 @@
   // Parse unary operators, both prefix and postfix.
 
   function parseMaybeUnary(noIn) {
+    var node;
     if (tokType.prefix) {
-      var node = startNode(), update = tokType.isUpdate;
+      node = startNode();
+      var update = tokType.isUpdate;
       node.operator = tokVal;
       node.prefix = true;
       next();
@@ -1432,7 +1435,7 @@
     }
     var expr = parseExprSubscripts();
     while (tokType.postfix && !canInsertSemicolon()) {
-      var node = startNodeFrom(expr);
+      node = startNodeFrom(expr);
       node.operator = tokVal;
       node.prefix = false;
       node.argument = expr;
@@ -1450,21 +1453,22 @@
   }
 
   function parseSubscripts(base, noCalls) {
+    var node;
     if (eat(_dot)) {
-      var node = startNodeFrom(base);
+      node = startNodeFrom(base);
       node.object = base;
       node.property = parseIdent(true);
       node.computed = false;
       return parseSubscripts(finishNode(node, "MemberExpression"), noCalls);
     } else if (eat(_bracketL)) {
-      var node = startNodeFrom(base);
+      node = startNodeFrom(base);
       node.object = base;
       node.property = parseExpression();
       node.computed = true;
       expect(_bracketR);
       return parseSubscripts(finishNode(node, "MemberExpression"), noCalls);
     } else if (!noCalls && eat(_parenL)) {
-      var node = startNodeFrom(base);
+      node = startNodeFrom(base);
       node.callee = base;
       node.arguments = parseExprList(_parenR, false);
       return parseSubscripts(finishNode(node, "CallExpression"), noCalls);
@@ -1477,22 +1481,23 @@
   // or `{}`.
 
   function parseExprAtom() {
+    var node;
     switch (tokType) {
     case _this:
-      var node = startNode();
+      node = startNode();
       next();
       return finishNode(node, "ThisExpression");
     case _name:
       return parseIdent();
     case _num: case _string: case _regexp:
-      var node = startNode();
+      node = startNode();
       node.value = tokVal;
       node.raw = input.slice(tokStart, tokEnd);
       next();
       return finishNode(node, "Literal");
 
     case _null: case _true: case _false:
-      var node = startNode();
+      node = startNode();
       node.value = tokType.atomValue;
       next();
       return finishNode(node, "Literal");
@@ -1504,7 +1509,7 @@
       return val;
 
     case _bracketL:
-      var node = startNode();
+      node = startNode();
       next();
       node.elements = parseExprList(_bracketR, true, true);
       return finishNode(node, "ArrayExpression");
@@ -1513,7 +1518,7 @@
       return parseObj();
 
     case _function:
-      var node = startNode();
+      node = startNode();
       next();
       return parseFunction(node, false);
 
