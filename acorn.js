@@ -1401,6 +1401,8 @@
   // defer further parser to one of its callers when it encounters an
   // operator that has a lower precedence than the set it is parsing.
 
+  var andOr = /&&|\|\|/;
+
   function parseExprOp(left, minPrec, noIn) {
     var prec = tokType.binop;
     if (prec != null && (!noIn || tokType !== _in)) {
@@ -1410,7 +1412,7 @@
         node.operator = tokVal;
         next();
         node.right = parseExprOp(parseMaybeUnary(noIn), prec, noIn);
-        node = finishNode(node, /&&|\|\|/.test(node.operator) ? "LogicalExpression" : "BinaryExpression");
+        node = finishNode(node, andOr.test(node.operator) ? "LogicalExpression" : "BinaryExpression");
         return parseExprOp(node, minPrec, noIn);
       }
     }
