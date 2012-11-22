@@ -93,7 +93,7 @@
   // offset. `input` should be the code string that the offset refers
   // into.
 
-  var getLineInfo = exports.getLineInfo = function(input, offset) {
+  var getLineInfo = exports.getLineInfo = function getLineInfo(input, offset) {
     for (var line = 1, cur = 0;;) {
       lineBreak.lastIndex = cur;
       var match = lineBreak.exec(input);
@@ -456,16 +456,18 @@
     tokComments = null;
     while (tokPos < inputLen) {
       var ch = input.charCodeAt(tokPos);
-      if (ch === 47) { // '/'
+      if (ch === 32) { // ' '
+        ++tokPos;
+      } else if(ch < 14 && ch > 8) {
+        ++tokPos;
+      } else if (ch === 47) { // '/'
         var next = input.charCodeAt(tokPos+1);
         if (next === 42) { // '*'
           skipBlockComment();
         } else if (next === 47) { // '/'
           skipLineComment();
         } else break;
-      } else if (ch < 14 && ch > 8) {
-        ++tokPos;
-      } else if (ch === 32 || ch === 160) { // ' ', '\xa0'
+      } else if (ch === 160) { // '\xa0'
         ++tokPos;
       } else if (ch >= 5760 && nonASCIIwhitespace.test(String.fromCharCode(ch))) {
         ++tokPos;
