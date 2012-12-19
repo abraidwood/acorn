@@ -1649,21 +1649,18 @@
 
   // Parse an object literal.
 
-  function parseObj() {
-    var node = startNode(), first = true, sawGetSet = false;
+function parseObj() {
+    var node = startNode(), sawGetSet = false;
     node.properties = [];
     next();
-    while (!eat(_braceR)) {
-      if (!first) {
-        expect(_comma);
-        if (options.allowTrailingCommas && eat(_braceR)) break;
-      } else first = false;
 
-      var prop = {key: parsePropertyName()}, isGetSet = false, kind;
-      if (eat(_colon)) {
-        prop.value = parseExpression(true);
-        kind = prop.kind = "init";
-      } else if (options.ecmaVersion >= 5 && prop.key.type === "Identifier" &&
+    if (!eat(_braceR)) {
+      for(;;) {
+        var prop = {key: parsePropertyName()}, isGetSet = false, kind;
+        if (eat(_colon)) {
+          prop.value = parseExpression(true);
+          kind = prop.kind = "init";
+        } else if (options.ecmaVersion >= 5 && prop.key.type === "Identifier" &&
                  (prop.key.name === "get" || prop.key.name === "set")) {
         isGetSet = sawGetSet = true;
         kind = prop.kind = prop.key.name;
@@ -1672,23 +1669,30 @@
         prop.value = parseFunction(startNode(), false);
       } else unexpected();
 
-      // getters and setters are not allowed to clash — either with
-      // each other or with an init property — and in strict mode,
-      // init properties are also not allowed to be repeated.
+        // getters and setters are not allowed to clash — either with
+        // each other or with an init property — and in strict mode,
+        // init properties are also not allowed to be repeated.
 
-      if (prop.key.type === "Identifier" && (strict || sawGetSet)) {
-        for (var i = 0; i < node.properties.length; ++i) {
-          var other = node.properties[i];
-          if (other.key.name === prop.key.name) {
-            var conflict = kind == other.kind || isGetSet && other.kind === "init" ||
-              kind === "init" && (other.kind === "get" || other.kind === "set");
-            if (conflict && !strict && kind === "init" && other.kind === "init") conflict = false;
-            if (conflict) raise(prop.key.start, "Redefinition of property");
+        if (prop.key.type === "Identifier" && (strict || sawGetSet)) {
+          for (var i = 0; i < node.properties.length; ++i) {
+            var other = node.properties[i];
+            if (other.key.name === prop.key.name) {
+              var conflict = kind == other.kind || isGetSet && other.kind === "init" ||
+                kind === "init" && (other.kind === "get" || other.kind === "set");
+              if (conflict && !strict && kind === "init" && other.kind === "init") conflict = false;
+              if (conflict) raise(prop.key.start, "Redefinition of property");
+            }
           }
         }
+
+        node.properties.push(prop);
+
+        if (options.allowTrailingCommas && eat(_braceR)) break;
+
+        expect(_comma);
       }
-      node.properties.push(prop);
     }
+
     return finishNode(node, "ObjectExpression");
   }
 
