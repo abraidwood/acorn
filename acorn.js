@@ -1710,11 +1710,14 @@ function parseObj() {
     else if (isStatement) unexpected();
     else node.id = null;
     node.params = [];
-    var first = true;
     expect(_parenL);
-    while (!eat(_parenR)) {
-      if (!first) expect(_comma); else first = false;
-      node.params.push(parseIdent());
+
+    if(!eat(_parenR)) {
+      for(;;) {
+        node.params.push(parseIdent());
+        if(eat(_parenR)) {break;}
+        expect(_comma);
+      }
     }
 
     // Start a new scope with regard to labels and the `inFunction`
