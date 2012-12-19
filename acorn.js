@@ -1352,17 +1352,18 @@
   // function bodies).
 
   function parseBlock(allowStrict) {
-    var node = startNode(), first = true, strict = false, oldStrict;
+    var node = startNode(), strict = false, oldStrict;
     node.body = [];
     expect(_braceL);
-    while (!eat(_braceR)) {
-      var stmt = parseStatement();
-      node.body.push(stmt);
-      if (first && isUseStrict(stmt)) {
-        oldStrict = strict;
-        setStrict(strict = true);
-      }
-      first = false;
+    if(!eat(_braceR)) {
+      do {
+        var stmt = parseStatement();
+        node.body.push(stmt);
+        if (isUseStrict(stmt)) {
+          oldStrict = strict;
+          setStrict(strict = true);
+        }
+      } while (!eat(_braceR))
     }
     if (strict && !oldStrict) setStrict(false);
     return finishNode(node, "BlockStatement");
