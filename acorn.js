@@ -1561,59 +1561,73 @@
   // `new`, or an expression wrapped in punctuation like `()`, `[]`,
   // or `{}`.
 
+  function parseExprAtom_this() {
+    var node = startNode();
+    next();
+    return finishNode(node, "ThisExpression");
+  }
+
+  function parseExprAtom_numStringRegexp() {
+    var node = startNode();
+    node.value = tokVal;
+    node.raw = input.slice(tokStart, tokEnd);
+    next();
+    return finishNode(node, "Literal");
+  }
+
+  function parseExprAtom_nullTrueFalse() {
+    var node = startNode();
+    node.value = tokType.atomValue;
+    next();
+    return finishNode(node, "Literal");
+  }
+
+  function parseExprAtom_parenL() {
+    var tokStartLoc1 = tokStartLoc, tokStart1 = tokStart;
+    next();
+    var val = parseExpression();
+    val.start = tokStart1;
+    val.end = tokEnd;
+    if (options.locations) {
+      val.loc.start = tokStartLoc1;
+      val.loc.end = tokEndLoc;
+    }
+    if (options.ranges)
+      val.range = [tokStart1, tokEnd];
+    expect(_parenR);
+    return val;
+  }
+
+  function parseExprAtom_bracketL() {
+    var node = startNode();
+    next();
+    node.elements = parseExprList(_bracketR, true, true);
+    return finishNode(node, "ArrayExpression");
+  }
+
+  function parseExprAtom_function() {
+    var node = startNode();
+    next();
+    return parseFunction(node, false);
+  }
+
   function parseExprAtom() {
-    var node;
     switch (tokType) {
-    case _this:
-      node = startNode();
-      next();
-      return finishNode(node, "ThisExpression");
-    case _name:
-      return parseIdent();
+
+    case _this: return parseExprAtom_this();
+    case _name: return parseIdent();
+
     case _num: case _string: case _regexp:
-      node = startNode();
-      node.value = tokVal;
-      node.raw = input.slice(tokStart, tokEnd);
-      next();
-      return finishNode(node, "Literal");
+      return parseExprAtom_numStringRegexp();
 
     case _null: case _true: case _false:
-      node = startNode();
-      node.value = tokType.atomValue;
-      next();
-      return finishNode(node, "Literal");
+      return parseExprAtom_nullTrueFalse();
 
-    case _parenL:
-      var tokStartLoc1 = tokStartLoc, tokStart1 = tokStart;
-      next();
-      var val = parseExpression();
-      val.start = tokStart1;
-      val.end = tokEnd;
-      if (options.locations) {
-        val.loc.start = tokStartLoc1;
-        val.loc.end = tokEndLoc;
-      }
-      if (options.ranges)
-        val.range = [tokStart1, tokEnd];
-      expect(_parenR);
-      return val;
-
-    case _bracketL:
-      node = startNode();
-      next();
-      node.elements = parseExprList(_bracketR, true, true);
-      return finishNode(node, "ArrayExpression");
-
-    case _braceL:
-      return parseObj();
-
-    case _function:
-      node = startNode();
-      next();
-      return parseFunction(node, false);
-
-    case _new:
-      return parseNew();
+    case _parenL: return parseExprAtom_parenL();
+    case _bracketL: return parseExprAtom_bracketL();
+    case _braceL: return parseObj();
+    case _function: return parseExprAtom_function();
+    case _new: return parseNew();
 
     default:
       unexpected();
