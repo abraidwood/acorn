@@ -34,6 +34,9 @@
     for (var opt in defaultOptions) if (!options.hasOwnProperty(opt))
       options[opt] = defaultOptions[opt];
     sourceFile = options.sourceFile || null;
+
+    if(options.forbidReserved) readWord = readWord_checkReserved;
+
     return parseTopLevel(options.program);
   };
 
@@ -225,18 +228,11 @@
 
   var _in = {keyword: "in", binop: 7, beforeExpr: true};
 
-  // Map keyword names to token types.
-
-  var keywordTypes = {"break": _break, "case": _case, "catch": _catch,
-                      "continue": _continue, "debugger": _debugger, "default": _default,
-                      "do": _do, "else": _else, "finally": _finally, "for": _for,
-                      "function": _function, "if": _if, "return": _return, "switch": _switch,
-                      "throw": _throw, "try": _try, "var": _var, "while": _while, "with": _with,
-                      "null": _null, "true": _true, "false": _false, "new": _new, "in": _in,
-                      "instanceof": {keyword: "instanceof", binop: 7}, "this": _this,
-                      "typeof": {keyword: "typeof", prefix: true},
-                      "void": {keyword: "void", prefix: true},
-                      "delete": {keyword: "delete", prefix: true}};
+  //
+  var _void = {keyword: "void", prefix: true};
+  var _delete = {keyword: "delete", prefix: true};
+  var _typeof = {keyword: "typeof", prefix: true};
+  var _instanceof = {keyword: "instanceof", binop: 7};
 
   // Punctuation token types. Again, the `type` property is purely for debugging.
 
@@ -336,7 +332,69 @@
 
   // And the keywords.
 
-  var isKeyword = makePredicate("break case catch continue debugger default do else finally for function if return switch throw try var while with null true false instanceof typeof void delete new in this");
+  var isKeyword = function(str, type) {
+    switch (str.length) {
+      case 4:
+          switch (str) {
+              case "null": return _null;
+              case "else": return _else;
+              case "true": return _true;
+              case "this": return _this;
+              case "case": return _case;
+              case "with": return _with;
+              case "void": return _void;
+          }
+          return type;
+      case 5:
+          switch (str) {
+              case "false": return _false;
+              case "break": return _break;
+              case "while": return _while;
+              case "catch": return _catch
+              case "throw": return _throw;
+          }
+          return type;
+      case 3:
+          switch (str) {
+              case "var": return _var;
+              case "for": return _for;
+              case "new": return _new;
+              case "try": return _try;
+          }
+          return type;
+      case 6:
+          switch (str) {
+              case "return": return _return;
+              case "switch": return _switch;
+              case "typeof": return _typeof;
+              case "delete": return _delete;
+          }
+          return type;
+      case 8:
+          switch (str) {
+              case "function": return _function;
+              case "continue": return _continue;
+              case "debugger": return _debugger;
+          }
+          return type;
+      case 2:
+          switch (str) {
+              case "if": return _if;
+              case "in": return _in;
+              case "do": return _do;
+          }
+          return type;
+      case 7:
+          switch (str) {
+              case "default": return _default;
+              case "finally": return _finally;
+          }
+          return type;
+      case 10:
+          if(str === "instanceof") return _instanceof;
+    }
+    return type;
+  };
 
   // ## Character categories
 
@@ -810,32 +868,54 @@
   // Only builds up the word character-by-character when it actually
   // containeds an escape, as a micro-optimization.
 
-  function readWord1() {
-    containsEsc = false;
-    var word, first = true, start = tokPos;
+  function readWord2(word, identifierFn) {
+    containsEsc = true;
+
     for (;;) {
       var ch = input.charCodeAt(tokPos);
       if (isIdentifierChar(ch)) {
-        if (containsEsc) word += input.charAt(tokPos);
+        word += input.charAt(tokPos);
         ++tokPos;
       } else if (ch === 92) { // "\"
-        if (!containsEsc) word = input.slice(start, tokPos);
-        containsEsc = true;
         if (input.charCodeAt(++tokPos) != 117) // "u"
           raise(tokPos, "Expecting Unicode escape sequence \\uXXXX");
         ++tokPos;
         var esc = readHexChar(4);
         var escStr = String.fromCharCode(esc);
         if (!escStr) raise(tokPos - 1, "Invalid Unicode escape");
-        if (!(first ? isIdentifierStart(esc) : isIdentifierChar(esc)))
+        if (!identifierFn(esc))
           raise(tokPos - 4, "Invalid Unicode escape");
         word += escStr;
       } else {
         break;
       }
-      first = false;
     }
-    return containsEsc ? word : input.slice(start, tokPos);
+    return word;
+  }
+
+  function readWord1() {
+    containsEsc = false;
+    var word, start = tokPos;
+
+    var ch = input.charCodeAt(tokPos);
+    if (isIdentifierChar(ch)) {
+      ++tokPos;
+    } else if (ch === 92) { // "\"
+      return readWord2(input.slice(start, tokPos), isIdentifierStart);
+    }
+
+    for (;;) {
+      var ch = input.charCodeAt(tokPos);
+
+      if (isIdentifierChar(ch)) {
+        ++tokPos;
+      } else if (ch === 92) { // "\"
+        return readWord2(input.slice(start, tokPos), isIdentifierChar);
+      } else {
+        break;
+      }
+    }
+    return input.slice(start, tokPos);
   }
 
   // Read an identifier or keyword token. Will check for reserved
@@ -845,11 +925,25 @@
     var word = readWord1();
     var type = _name;
     if (!containsEsc) {
-      if (isKeyword(word)) type = keywordTypes[word];
-      else if (options.forbidReserved &&
-               (options.ecmaVersion === 3 ? isReservedWord3 : isReservedWord5)(word) ||
-               strict && isStrictReservedWord(word))
+      type = isKeyword(word, type);
+      if(type === _name && strict && isStrictReservedWord(word)) {
         raise(tokStart, "The keyword '" + word + "' is reserved");
+      }
+    }
+    return finishToken(type, word);
+  }
+
+  function readWord_checkReserved() {
+    var word = readWord1();
+    var type = _name;
+    if (!containsEsc) {
+      type = isKeyword(word, type);
+      if(type === _name) {
+        if ((options.ecmaVersion === 3 ? isReservedWord3 : isReservedWord5)(word))
+          raise(tokStart, "The keyword '" + word + "' is reserved");
+        else if (strict && isStrictReservedWord(word))
+          raise(tokStart, "The keyword '" + word + "' is reserved");
+      }
     }
     return finishToken(type, word);
   }
