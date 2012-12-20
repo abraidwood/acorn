@@ -1031,13 +1031,17 @@
     labels = [];
     readToken();
 
-    var node = program || startNode(), first = true;
+    var node = program || startNode();
     if (!program) node.body = [];
-    while (tokType !== _eof) {
-      var stmt = parseStatement();
-      node.body.push(stmt);
-      if (first && isUseStrict(stmt)) setStrict(true);
-      first = false;
+    if(tokType !== _eof) {
+        var stmt = parseStatement();
+        node.body.push(stmt);
+        if (isUseStrict(stmt)) setStrict(true);
+
+        while(tokType !== _eof) {
+          var stmt = parseStatement();
+          node.body.push(stmt);
+        }
     }
     return finishNode(node, "Program");
   }
