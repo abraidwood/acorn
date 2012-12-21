@@ -1031,7 +1031,7 @@
     }
     if (options.locations) {
       node.loc = new node_loc_t();
-      node.start = other.loc.start;//{start: other.loc.start, end: null, source: other.loc.source};
+      node.loc.start = other.loc.start;//{start: other.loc.start, end: null, source: other.loc.source};
     }
     if (options.ranges)
       node.range = [other.range[0], 0];
