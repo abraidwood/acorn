@@ -683,7 +683,7 @@
     return readRegexp();
   }
 
-  function readToken(forceRegexp) {
+  function readToken() {
     tokStart = tokPos;
     if (options.locations) tokStartLoc = curLineLoc();
     tokCommentsBefore = tokComments;
