@@ -676,11 +676,18 @@
     return false;
   }
 
+  function readToken_forceRegexp() {
+    tokStart = tokPos;
+    if (options.locations) tokStartLoc = curLineLoc();
+    tokCommentsBefore = tokComments;
+    return readRegexp();
+  }
+
   function readToken(forceRegexp) {
     tokStart = tokPos;
     if (options.locations) tokStartLoc = curLineLoc();
     tokCommentsBefore = tokComments;
-    if (forceRegexp) return readRegexp();
+
     if (tokPos >= inputLen) return finishToken(_eof);
 
     var code = input.charCodeAt(tokPos);
