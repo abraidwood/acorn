@@ -1852,9 +1852,11 @@ function parseObj() {
 
         node.properties.push(prop);
 
-        if (options.allowTrailingCommas && eat(_braceR)) break;
+        if(eat(_braceR)) break;
 
         expect(_comma);
+
+        if(options.allowTrailingCommas && eat(_braceR)) break;
       }
     }
 
