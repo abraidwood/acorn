@@ -270,53 +270,38 @@
   // non-Chrome browsers, to check whether a string is in a set, a
   // predicate containing a big ugly `switch` statement is faster than
   // a regular expression, and on Chrome the two are about on par.
-  // This function uses `eval` (non-lexical) to produce such a
-  // predicate from a space-separated string of words.
+  //
+  // eval was removed as it can't be optimized in v8 and the functions
+  // are 'very hot' according to its tracing
   //
   // It starts by sorting the words by length.
 
-  function makePredicate(words) {
-    words = words.split(" ");
-    var f = "", cats = [], i;
-    out: for (i = 0; i < words.length; ++i) {
-      for (var j = 0; j < cats.length; ++j)
-        if (cats[j][0].length == words[i].length) {
-          cats[j].push(words[i]);
-          continue out;
-        }
-      cats.push([words[i]]);
-    }
-    function compareTo(arr) {
-      if (arr.length == 1) return f += "return str === " + JSON.stringify(arr[0]) + ";";
-      f += "switch(str){";
-      for (var i = 0; i < arr.length; ++i) f += "case " + JSON.stringify(arr[i]) + ":";
-      f += "return true}return false;";
-    }
-
-    // When there are more than three length categories, an outer
-    // switch first dispatches on the lengths, to save on comparisons.
-
-    if (cats.length > 3) {
-      cats.sort(function(a, b) {return b.length - a.length;});
-      f += "switch(str.length){";
-      for (i = 0; i < cats.length; ++i) {
-        var cat = cats[i];
-        f += "case " + cat[0].length + ":";
-        compareTo(cat);
-      }
-      f += "}";
-
-    // Otherwise, simply generate a flat `switch` statement.
-
-    } else {
-      compareTo(words);
-    }
-    return new Function("str", f);
-  }
-
   // The ECMAScript 3 reserved word list.
 
-  var isReservedWord3 = makePredicate("abstract boolean byte char class double enum export extends final float goto implements import int interface long native package private protected public short static super synchronized throws transient volatile");
+  var isReservedWord3 = function(str) {
+    switch (str.length) {
+      case 3:
+          return str==="int";
+      case 4:
+        return str==="byte"||str==="char"||str==="enum"||str==="goto"||str==="long";
+      case 5:
+        return str==="class"||str==="final"||str==="float"||str==="short"||str==="super";
+      case 6:
+        return str==="double"||str==="export"||str==="import"||str==="native"||str==="public"||str==="static"||str==="throws";
+      case 7:
+        return str==="boolean"||str==="extends"||str==="package"||str==="private";
+      case 8:
+        return str==="abstract"||str==="volatile";
+      case 9:
+        return str==="interface"||str==="protected"||str==="transient";
+      case 10:
+          return str==="implements";
+      case 12:
+          return str==="synchronized";
+      default:
+        return false;
+    }
+  }
 
   // ECMAScript 5 reserved words.
 
@@ -361,26 +346,26 @@
 
   function is4LetterKeyword(str, type) {
     switch (str) {
-        case "null": return _null;
-        case "else": return _else;
-        case "true": return _true;
-        case "this": return _this;
-        case "case": return _case;
-        case "with": return _with;
-        case "void": return _void;
+      case "null": return _null;
+      case "else": return _else;
+      case "true": return _true;
+      case "this": return _this;
+      case "case": return _case;
+      case "with": return _with;
+      case "void": return _void;
+      default: return type;
     }
-    return type;
   }
 
   function is5LetterKeyword(str, type) {
     switch (str) {
-        case "false": return _false;
-        case "break": return _break;
-        case "while": return _while;
-        case "catch": return _catch
-        case "throw": return _throw;
+      case "false": return _false;
+      case "break": return _break;
+      case "while": return _while;
+      case "catch": return _catch
+      case "throw": return _throw;
+      default: return type;
     }
-    return type;
   }
 
   function is3LetterKeyword(str, type) {
@@ -389,27 +374,27 @@
       case "for": return _for;
       case "new": return _new;
       case "try": return _try;
+      default: return type;
     }
-    return type;
   }
 
   function is6LetterKeyword(str, type) {
     switch (str) {
-        case "return": return _return;
-        case "switch": return _switch;
-        case "typeof": return _typeof;
-        case "delete": return _delete;
+      case "return": return _return;
+      case "switch": return _switch;
+      case "typeof": return _typeof;
+      case "delete": return _delete;
+      default: return type;
     }
-    return type;
   }
 
   function is8LetterKeyword(str, type) {
     switch (str) {
-        case "function": return _function;
-        case "continue": return _continue;
-        case "debugger": return _debugger;
+      case "function": return _function;
+      case "continue": return _continue;
+      case "debugger": return _debugger;
+      default: return type;
     }
-    return type;
   }
 
   function is2LetterKeyword(str, type) {
@@ -417,16 +402,16 @@
       case "if": return _if;
       case "in": return _in;
       case "do": return _do;
+      default: return type;
     }
-    return type;
   }
 
   function is7LetterKeyword(str, type) {
     switch (str) {
-        case "default": return _default;
-        case "finally": return _finally;
+      case "default": return _default;
+      case "finally": return _finally;
+      default: return type;
     }
-    return type;
   }
 
   var isKeyword = function(str, type) {
@@ -438,11 +423,9 @@
       case 6: return is6LetterKeyword(str, type);
       case 7: return is7LetterKeyword(str, type);
       case 8: return is8LetterKeyword(str, type);
-
-      case 10:
-          if(str === "instanceof") return _instanceof;
+      case 10: if(str === "instanceof") return _instanceof;
+      default: return type;
     }
-    return type;
   };
 
   // ## Character categories
@@ -557,7 +540,8 @@
 
   function skipLineComment() {
     var start = tokPos;
-    var ch = input.charCodeAt(tokPos+=2);
+    tokPos += 2;
+    var ch = input.charCodeAt(tokPos);
     while (tokPos < inputLen && ch !== 10 && ch !== 13 && ch !== 8232 && ch !== 8329) {
       ++tokPos;
       ch = input.charCodeAt(tokPos);
