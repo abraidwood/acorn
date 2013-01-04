@@ -320,15 +320,42 @@
 
   // ECMAScript 5 reserved words.
 
-  var isReservedWord5 = makePredicate("class enum extends super const export import");
-
+  function isReservedWord5(str) {
+    switch (str) {
+      case 'class':
+      case 'enum':
+      case 'export':
+      case 'extends':
+      case 'import':
+      case 'super':
+          return true;
+      default:
+          return false;
+    }
+  }
   // The additional reserved words in strict mode.
 
-  var isStrictReservedWord = makePredicate("implements interface let package private protected public static yield");
-
+  function isStrictReservedWord(str) {
+    switch (str) {
+      case 'implements':
+      case 'interface':
+      case 'package':
+      case 'private':
+      case 'protected':
+      case 'public':
+      case 'static':
+      case 'yield':
+      case 'let':
+          return true;
+      default:
+          return false;
+    }
+  }
   // The forbidden variable names in strict mode.
 
-  var isStrictBadIdWord = makePredicate("eval arguments");
+  var isStrictBadIdWord = function(str) {
+    return str === "eval" || str === "arguments";
+  }
 
   // And the keywords.
 
