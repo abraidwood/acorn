@@ -851,6 +851,30 @@
 
   // Read a string value, interpreting backslash-escapes.
 
+  function readOctalLiteral(ch) {
+    var shift = 0;
+    var ret = ch - 48;
+
+    var ch2 = input.charCodeAt(tokPos);
+    if(ch2 >= 48 && ch2 <= 55) {  // 0-7
+      shift = 1;
+      ret = ret * 8 + ch2 - 48;
+
+      if(ch < 52) { // '3' because value must be less than 255 overall -> 377 in octal
+        var ch3 = input.charCodeAt(tokPos+1);
+        if(ch3 >= 48 && ch3 <= 55) {  // 0-7
+          shift = 2;
+          ret = ret * 8 + ch3 - 48;
+        }
+      }
+    }
+    if(ret !== 0) {
+      if (strict) raise(tokPos - 2, "Octal literal in strict mode");
+      tokPos += shift;
+    }
+    return ret;
+  }
+
   var rs_str = [];
 
   function readString(quote) {
@@ -865,17 +889,9 @@
       }
       if (ch === 92) { // '\'
         ch = input.charCodeAt(++tokPos);
-        var octal = /^[0-7]+/.exec(input.slice(tokPos, tokPos + 3));
-        if (octal) octal = octal[0];
-        while (octal && parseInt(octal, 8) > 255) octal = octal.slice(0, octal.length - 1);
-        if (octal === "0") octal = null;
         ++tokPos;
-        if (octal) {
-          if (strict) raise(tokPos - 2, "Octal literal in strict mode");
-          rs_str.push(parseInt(octal, 8));
-          tokPos += octal.length - 1;
-        } else {
-          switch (ch) {
+
+        switch(ch) {
           case 110: rs_str.push(10); break; // 'n' -> '\n'
           case 114: rs_str.push(13); break; // 'r' -> '\r'
           case 120: rs_str.push(readHexChar(2)); break; // 'x'
@@ -885,15 +901,16 @@
           case 98: rs_str.push(8); break; // 'b' -> '\b'
           case 118: rs_str.push(11); break; // 'v' -> '\u000b'
           case 102: rs_str.push(12); break; // 'f' -> '\f'
-          case 48: rs_str.push(0); break; // 0 -> '\0'
           case 13: if (input.charCodeAt(tokPos) === 10) ++tokPos; // '\r\n'
           case 10: break; // ' \n'
-          default: rs_str.push(ch); break;
-          }
+
+          default:
+            if(ch < 48 || ch > 55) rs_str.push(ch); // 0-7 -> possible octal
+            else rs_str.push(readOctalLiteral(ch));
         }
       } else {
         if (ch === 13 || ch === 10 || ch === 8232 || ch === 8329) raise(tokStart, "Unterminated string constant");
-        if (ch !== 92) rs_str.push(ch); // '\'
+        rs_str.push(ch); // '\'
         ++tokPos;
       }
     }
