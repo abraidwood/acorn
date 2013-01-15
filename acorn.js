@@ -1760,6 +1760,7 @@
   function parseExprAtom_nullTrueFalse() {
     var node = startNode();
     node.value = tokType.atomValue;
+    node.raw = tokType.keyword
     next();
     return finishNode(node, "Literal");
   }
