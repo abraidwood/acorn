@@ -795,7 +795,7 @@
 
   function readInt16(len) {
     var start = tokPos, total = 0;
-    for (;;) {
+    for (var i = 0, e = len == null ? Infinity : len; i < e; ++i) {
       var code = input.charCodeAt(tokPos), val;
       if (code >= 48 && code <= 57) val = code - 48; // 0-9
       else if (code >= 97) val = code - 87;//97 + 10; // a + 10
