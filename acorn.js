@@ -780,7 +780,7 @@
   // will return `null` unless the integer has exactly `len` digits.
 
   function readDecimal() {
-    var start = tokPos, total = 0, len = null;
+    var start = tokPos, total = 0;
     for (;;) {
       var code = input.charCodeAt(tokPos), val;
       if (code >= 48 && code <= 57) val = code - 48; // 0-9
@@ -1056,25 +1056,14 @@
 
   // Start an AST node, attaching a start offset.
 
-  function node_t(s) {
-    this.type = null;
-    this.start = tokStart;
-    this.end = null;
-  }
 
-  function node_loc_t(s) {
-    this.start = tokStartLoc;
-    this.end = null;
-    if (sourceFile !== null) this.source = sourceFile;
-  }
-
-  var node_t = function(s) {
+  var node_t = function() {
     this.type = null;
     this.start = tokStart;
     this.end = null;
   };
 
-  var node_loc_t = function(s) {
+  var node_loc_t = function() {
     this.start = tokStartLoc;
     this.end = null;
     if (sourceFile !== null) this.source = sourceFile;
