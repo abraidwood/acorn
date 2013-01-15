@@ -22,8 +22,8 @@
     if (!base) base = exports;
     function c(node, st, override) {
       var type = override || node.type, found = visitors[type];
-      if (found) found(node, st);
       base[type](node, st, c);
+      if (found) found(node, st);
     }
     c(node, state);
   };
@@ -34,7 +34,7 @@
   // their child nodes (by calling their third argument on these
   // nodes).
   exports.recursive = function(node, state, funcs, base) {
-    var visitor = exports.make(funcs, base);
+    var visitor = funcs ? exports.make(funcs, base) : base;
     function c(node, st, override) {
       visitor[override || node.type](node, st, c);
     }

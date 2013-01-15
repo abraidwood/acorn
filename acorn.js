@@ -16,7 +16,7 @@
 (function(exports) {
   "use strict";
 
-  exports.version = "0.0.1";
+  exports.version = "0.0.2";
 
   // The main exported interface (under `self.acorn` when in the
   // browser) is a `parse` function that takes a code string and
@@ -58,18 +58,21 @@
     // By default, reserved words are not enforced. Enable
     // `forbidReserved` to enforce them.
     forbidReserved: false,
-    // When `trackComments` is turned on, the parser will attach
-    // `commentsBefore` and `commentsAfter` properties to AST nodes
-    // holding arrays of strings. A single comment may appear in both
-    // a `commentsBefore` and `commentsAfter` array (of the nodes
-    // after and before it), but never twice in the before (or after)
-    // array of different nodes.
-    trackComments: false,
     // When `locations` is on, `loc` properties holding objects with
     // `start` and `end` properties in `{line, column}` form (with
     // line being 1-based and column 0-based) will be attached to the
     // nodes.
     locations: false,
+    // A function can be passed as `onComment` option, which will
+    // cause Acorn to call that function with `(block, text, start,
+    // end)` parameters whenever a comment is skipped. `block` is a
+    // boolean indicating whether this is a block (`/* */`) comment,
+    // `text` is the content of the comment, and `start` and `end` are
+    // character offsets that denote the start and end of the comment.
+    // When the `locations` option is on, two more parameters are
+    // passed, the full `{line, column}` locations of the start and
+    // end of the comments.
+    onComment: null,
     // Nodes have their start and end characters offsets recorded in
     // `start` and `end` properties (directly on the node, rather than
     // the `loc` object, which holds line/column data. To also add a
@@ -136,11 +139,6 @@
 
   var tokType, tokVal;
 
-  // These are used to hold arrays of comments when
-  // `options.trackComments` is true.
-
-  var tokCommentsBefore, tokCommentsAfter;
-
   // Interal state for the tokenizer. To distinguish between division
   // operators and regular expressions, it remembers whether the last
   // token was one that is allowed to be followed by an expression.
@@ -148,7 +146,7 @@
   // division operator. See the `parseStatement` function for a
   // caveat.)
 
-  var tokRegexpAllowed, tokComments;
+  var tokRegexpAllowed;
 
   // When `options.locations` is true, these are used to keep
   // track of the current line, and know when a new line has been
@@ -490,7 +488,7 @@
     return match ? match.index + match[0].length : input.length + 1;
   }
 
-  var line_loc_t = function() {
+  function line_loc_t() {
     this.line = tokCurLine;
     this.column = tokPos - tokLineStart;
   }
@@ -511,14 +509,12 @@
     tokPos = tokLineStart = 0;
     tokLineStartNext = nextLineStart();
     tokRegexpAllowed = true;
-    tokComments = null;
     skipSpace();
   }
 
-  // Called at the end of every token. Sets `tokEnd`, `tokVal`,
-  // `tokCommentsAfter`, and `tokRegexpAllowed`, and skips the space
-  // after the token, so that the next one's `tokStart` will point at
-  // the right position.
+  // Called at the end of every token. Sets `tokEnd`, `tokVal`, and
+  // `tokRegexpAllowed`, and skips the space after the token, so that
+  // the next one's `tokStart` will point at the right position.
 
   function finishToken(type, val) {
     tokEnd = tokPos;
@@ -526,36 +522,39 @@
     tokType = type;
     skipSpace();
     tokVal = val;
-    tokCommentsAfter = tokComments;
     tokRegexpAllowed = type.beforeExpr;
   }
 
   function skipBlockComment() {
-    var end = input.indexOf("*/", tokPos += 2);
+    if (options.onComment && options.locations)
+      var startLoc = curLineLoc();
+    var start = tokPos, end = input.indexOf("*/", tokPos += 2);
     if (end === -1) raise(tokPos - 2, "Unterminated comment");
-    if (options.trackComments)
-      (tokComments || (tokComments = [])).push(input.slice(tokPos, end));
     tokPos = end + 2;
+    if (options.onComment)
+      options.onComment(true, input.slice(start + 2, end), start, tokPos,
+                        startLoc, options.locations && curLineLoc());
   }
 
   function skipLineComment() {
     var start = tokPos;
+    if (options.onComment && options.locations)
+      var startLoc = curLineLoc();
     tokPos += 2;
     var ch = input.charCodeAt(tokPos);
     while (tokPos < inputLen && ch !== 10 && ch !== 13 && ch !== 8232 && ch !== 8329) {
       ++tokPos;
       ch = input.charCodeAt(tokPos);
     }
-    if (options.trackComments)
-      (tokComments || (tokComments = [])).push(input.slice(start, tokPos));
+    if (options.onComment)
+      options.onComment(false, input.slice(start + 2, tokPos - 1), start, tokPos,
+                        startLoc, options.locations && curLineLoc());
   }
 
   // Called at the start of the parse and after every token. Skips
-  // whitespace and comments, and, if `options.trackComments` is on,
-  // will store all skipped comments in `tokComments`.
+  // whitespace and comments, and.
 
   function skipSpace() {
-    tokComments = null;
     while (tokPos < inputLen) {
       var ch = input.charCodeAt(tokPos);
       if (ch === 32) { // ' '
@@ -725,8 +724,6 @@
   function readToken() {
     tokStart = tokPos;
     if (options.locations) tokStartLoc = curLineLoc();
-    tokCommentsBefore = tokComments;
-
     if (tokPos >= inputLen) return finishToken(_eof);
 
     var code = input.charCodeAt(tokPos);
@@ -783,7 +780,7 @@
   // will return `null` unless the integer has exactly `len` digits.
 
   function readDecimal() {
-    var start = tokPos, total = 0;
+    var start = tokPos, total = 0, len = null;
     for (;;) {
       var code = input.charCodeAt(tokPos), val;
       if (code >= 48 && code <= 57) val = code - 48; // 0-9
@@ -1057,8 +1054,19 @@
     readToken();
   }
 
-  // Start an AST node, attaching a start offset and optionally a
-  // `commentsBefore` property to it.
+  // Start an AST node, attaching a start offset.
+
+  function node_t(s) {
+    this.type = null;
+    this.start = tokStart;
+    this.end = null;
+  }
+
+  function node_loc_t(s) {
+    this.start = tokStartLoc;
+    this.end = null;
+    if (sourceFile !== null) this.source = sourceFile;
+  }
 
   var node_t = function(s) {
     this.type = null;
@@ -1074,10 +1082,6 @@
 
   function startNode() {
     var node = new node_t();
-    if (options.trackComments && tokCommentsBefore) {
-      node.commentsBefore = tokCommentsBefore;
-      tokCommentsBefore = null;
-    }
     if (options.locations)
       node.loc = new node_loc_t();
     if (options.ranges)
@@ -1085,18 +1089,13 @@
     return node;
   }
 
-  // Start a node whose start offset/comments information should be
-  // based on the start of another node. For example, a binary
-  // operator node is only started after its left-hand side has
-  // already been parsed.
+  // Start a node whose start offset information should be based on
+  // the start of another node. For example, a binary operator node is
+  // only started after its left-hand side has already been parsed.
 
   function startNodeFrom(other) {
     var node = new node_t();
     node.start = other.start;
-    if (other.commentsBefore) {
-      node.commentsBefore = other.commentsBefore;
-      other.commentsBefore = null;
-    }
     if (options.locations) {
       node.loc = new node_loc_t();
       node.loc.start = other.loc.start;
@@ -1107,30 +1106,11 @@
     return node;
   }
 
-  // Finish an AST node, adding `type`, `end`, and `commentsAfter`
-  // properties.
-  //
-  // We keep track of the last node that we finished, in order
-  // 'bubble' `commentsAfter` properties up to the biggest node. I.e.
-  // in '`1 + 1 // foo', the comment should be attached to the binary
-  // operator node, not the second literal node.
-
-  var lastFinishedNode;
+  // Finish an AST node, adding `type` and `end` properties.
 
   function finishNode(node, type) {
     node.type = type;
     node.end = lastEnd;
-    if (options.trackComments) {
-      if (tokCommentsAfter) {
-        node.commentsAfter = tokCommentsAfter;
-        tokCommentsAfter = null;
-      } else if (lastFinishedNode && lastFinishedNode.end === lastEnd &&
-                 lastFinishedNode.commentsAfter) {
-        node.commentsAfter = lastFinishedNode.commentsAfter;
-        lastFinishedNode.commentsAfter = null;
-      }
-      lastFinishedNode = node;
-    }
     if (options.locations)
       node.loc.end = lastEndLoc;
     if (options.ranges)
@@ -1259,6 +1239,7 @@
   function parseStatement_debugger() {
     var node = startNode();
     next();
+    semicolon();
     return finishNode(node, "DebuggerStatement");
   }
 
@@ -1357,7 +1338,6 @@
     next(); // Closing brace
     labels.pop();
     return finishNode(node, "SwitchStatement");
-
   }
 
   function parseStatement_throw() {
@@ -1366,6 +1346,7 @@
     if (newline.test(input.slice(lastEnd, tokStart)))
       raise(lastEnd, "Illegal newline after throw");
     node.argument = parseExpression();
+    semicolon();
     return finishNode(node, "ThrowStatement");
   }
 
