@@ -1427,14 +1427,14 @@
 
   function parseStatement_default() {
     var starttype = tokType, node = startNode(), i;
-
     var maybeName = tokVal, expr = parseExpression();
     if (starttype === _name && expr.type === "Identifier" && eat(_colon)) {
-      for (i = 0; i < labels.length; ++i)
+      for (var i = 0; i < labels.length; ++i)
         if (labels[i].name === maybeName) raise(expr.start, "Label '" + maybeName + "' is already declared");
       var kind = tokType.isLoop ? "loop" : tokType === _switch ? "switch" : null;
       labels.push({name: maybeName, kind: kind});
       node.body = parseStatement();
+      labels.pop();
       node.label = expr;
       return finishNode(node, "LabeledStatement");
     } else {
