@@ -1202,7 +1202,7 @@
   // does not help.
 
   function parseStatement_break_continue() {
-    var starttype = tokType, node = startNode(), i;
+    var starttype = tokType, node = startNode(), i, leni;
     next();
     var isBreak = starttype === _break;
     if (eat(_semi) || canInsertSemicolon()) node.label = null;
@@ -1214,14 +1214,14 @@
 
     // Verify that there is an actual destination to break or
     // continue to.
-    for (i = 0; i < labels.length; ++i) {
+    for (i = 0, leni=labels.length; i < leni; ++i) {
       var lab = labels[i];
       if (node.label == null || lab.name === node.label.name) {
         if (lab.kind != null && (isBreak || lab.kind === "loop")) break;
         if (node.label && isBreak) break;
       }
     }
-    if (i === labels.length) raise(node.start, "Unsyntactic " + starttype.keyword);
+    if (i === leni) raise(node.start, "Unsyntactic " + starttype.keyword);
     return finishNode(node, isBreak ? "BreakStatement" : "ContinueStatement");
   }
 
@@ -1399,7 +1399,7 @@
     var starttype = tokType, node = startNode(), i;
     var maybeName = tokVal, expr = parseExpression();
     if (starttype === _name && expr.type === "Identifier" && eat(_colon)) {
-      for (var i = 0; i < labels.length; ++i)
+      for (var i = 0, leni = labels.length; i < leni; ++i)
         if (labels[i].name === maybeName) raise(expr.start, "Label '" + maybeName + "' is already declared");
       var kind = tokType.isLoop ? "loop" : tokType === _switch ? "switch" : null;
       labels.push({name: maybeName, kind: kind});
@@ -1827,7 +1827,7 @@ function parseObj() {
         // init properties are also not allowed to be repeated.
 
         if (prop.key.type === "Identifier" && (strict || sawGetSet)) {
-          for (var i = 0; i < node.properties.length; ++i) {
+          for (var i = 0, leni = node.properties.length; i < leni; ++i) {
             var other = node.properties[i];
             if (other.key.name === prop.key.name) {
               var conflict = kind == other.kind || isGetSet && other.kind === "init" ||
@@ -1885,7 +1885,7 @@ function parseObj() {
     // are not repeated, and it does not try to bind the words `eval`
     // or `arguments`.
     if (strict || node.body.body.length && isUseStrict(node.body.body[0])) {
-      for (var i = node.id ? -1 : 0; i < node.params.length; ++i) {
+      for (var i = node.id ? -1 : 0, leni = node.params.length; i < leni; ++i) {
         var id = i < 0 ? node.id : node.params[i];
         if (isStrictReservedWord(id.name) || isStrictBadIdWord(id.name))
           raise(id.start, "Defining '" + id.name + "' in strict mode");
