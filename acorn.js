@@ -342,85 +342,64 @@
 
   // And the keywords.
 
-  function is4LetterKeyword(str, type) {
-    switch (str) {
-      case "null": return _null;
-      case "else": return _else;
-      case "true": return _true;
-      case "this": return _this;
-      case "case": return _case;
-      case "with": return _with;
-      case "void": return _void;
-      default: return type;
-    }
-  }
-
-  function is5LetterKeyword(str, type) {
-    switch (str) {
-      case "false": return _false;
-      case "break": return _break;
-      case "while": return _while;
-      case "catch": return _catch
-      case "throw": return _throw;
-      default: return type;
-    }
-  }
-
-  function is3LetterKeyword(str, type) {
-    switch (str) {
-      case "var": return _var;
-      case "for": return _for;
-      case "new": return _new;
-      case "try": return _try;
-      default: return type;
-    }
-  }
-
-  function is6LetterKeyword(str, type) {
-    switch (str) {
-      case "return": return _return;
-      case "switch": return _switch;
-      case "typeof": return _typeof;
-      case "delete": return _delete;
-      default: return type;
-    }
-  }
-
-  function is8LetterKeyword(str, type) {
-    switch (str) {
-      case "function": return _function;
-      case "continue": return _continue;
-      case "debugger": return _debugger;
-      default: return type;
-    }
-  }
-
-  function is2LetterKeyword(str, type) {
-    switch (str) {
-      case "if": return _if;
-      case "in": return _in;
-      case "do": return _do;
-      default: return type;
-    }
-  }
-
-  function is7LetterKeyword(str, type) {
-    switch (str) {
-      case "default": return _default;
-      case "finally": return _finally;
-      default: return type;
-    }
-  }
-
   var isKeyword = function(str, type) {
     switch (str.length) {
-      case 2: return is2LetterKeyword(str, type);
-      case 3: return is3LetterKeyword(str, type);
-      case 4: return is4LetterKeyword(str, type);
-      case 5: return is5LetterKeyword(str, type);
-      case 6: return is6LetterKeyword(str, type);
-      case 7: return is7LetterKeyword(str, type);
-      case 8: return is8LetterKeyword(str, type);
+           case 4:
+          switch (str) {
+              case "null": return _null;
+              case "else": return _else;
+              case "true": return _true;
+              case "this": return _this;
+              case "case": return _case;
+              case "with": return _with;
+              case "void": return _void;
+          }
+          return type;
+      case 5:
+          switch (str) {
+              case "false": return _false;
+              case "break": return _break;
+              case "while": return _while;
+              case "catch": return _catch
+              case "throw": return _throw;
+          }
+          return type;
+      case 3:
+          switch (str) {
+              case "var": return _var;
+              case "for": return _for;
+              case "new": return _new;
+              case "try": return _try;
+          }
+          return type;
+      case 6:
+          switch (str) {
+              case "return": return _return;
+              case "switch": return _switch;
+              case "typeof": return _typeof;
+              case "delete": return _delete;
+          }
+          return type;
+      case 8:
+          switch (str) {
+              case "function": return _function;
+              case "continue": return _continue;
+              case "debugger": return _debugger;
+          }
+          return type;
+      case 2:
+          switch (str) {
+              case "if": return _if;
+              case "in": return _in;
+              case "do": return _do;
+          }
+          return type;
+      case 7:
+          switch (str) {
+              case "default": return _default;
+              case "finally": return _finally;
+          }
+          return type;
       case 10: if(str === "instanceof") return _instanceof;
       default: return type;
     }
