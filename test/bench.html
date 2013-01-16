@@ -7,6 +7,7 @@
   <script src="compare/uglifyjs2.js"></script>
   <script src="jquery-string.js"></script>
   <script src="codemirror-string.js"></script>
+  <script src="threejs-string.js"></script>
   <style>
     td { text-align: right; padding-right: 20px; }
     th { text-align: left; padding-right: 40px; }
@@ -18,7 +19,7 @@
 <h1>Acorn/Esprima/UglifyJS2 speed comparison</h1>
 
 <p>This will run each of the three parsers on the source code of
-jQuery 1.6.4 and CodeMirror 3.0b1 for two seconds, and show a table
+jQuery 1.6.4, CodeMirror 3.0b1 and threejs r51 for two seconds, and show a table
 indicating the number of lines parsed per second. Note that UglifyJS
 always stores location data, and is thus not fairly compared by the
 benchmark <em>without</em> location data.<p>
@@ -35,6 +36,12 @@ numbers.</p>
 <span id="running"></span>
 
 <script>
+  var testStrings = [
+    jquery164,
+    codemirror30,
+    threejs51
+  ];
+
   function runAcorn(code, locations) {
     acorn.parse(code, {locations: locations});
   }
@@ -45,16 +52,21 @@ numbers.</p>
     uglifyjs.parse(code);
   }
 
-  var totalLines = codemirror30.split("\n").length + jquery164.split("\n").length;
+  var i, totalLines = 0;
+  for(i=0;i<testStrings.length;i++) {
+    totalLines += testStrings[i].split('\n').length;
+  }
 
   function benchmark(runner, locations) {
     // Give it a chance to warm up (first runs are usually outliers)
-    runner(jquery164, locations);
-    runner(codemirror30, locations);
+    for(i=0;i<testStrings.length;i++) {
+      runner(testStrings[i], locations);
+    }
     var t0 = +new Date, t1, lines = 0;
     for (;;) {
-      runner(jquery164, locations);
-      runner(codemirror30, locations);
+      for(i=0;i<testStrings.length;i++) {
+        runner(testStrings[i], locations);
+      }
       lines += totalLines;
       t1 = +new Date;
       if (t1 - t0 > 2000) break;
