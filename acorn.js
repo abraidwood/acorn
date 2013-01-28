@@ -150,9 +150,9 @@
 
   // When `options.locations` is true, these are used to keep
   // track of the current line, and know when a new line has been
-  // entered. See the `curLineLoc` function.
+  // entered.
 
-  var tokCurLine, tokLineStart, tokLineStartNext;
+  var tokCurLine, tokLineStart;
 
   // These store the position of the previous token, which is useful
   // when finishing a node and assigning its `end` position.
@@ -472,21 +472,11 @@
     this.column = tokPos - tokLineStart;
   }
 
-  function curLineLoc() {
-    while (tokLineStartNext <= tokPos) {
-      ++tokCurLine;
-      tokLineStart = tokLineStartNext;
-      tokLineStartNext = nextLineStart();
-    }
-    return new line_loc_t();
-  }
-
   // Reset the token state. Used at the start of a parse.
 
   function initTokenState() {
     tokCurLine = 1;
     tokPos = tokLineStart = 0;
-    tokLineStartNext = nextLineStart();
     tokRegexpAllowed = true;
     skipSpace();
   }
@@ -497,7 +487,7 @@
 
   function finishToken(type, val) {
     tokEnd = tokPos;
-    if (options.locations) tokEndLoc = curLineLoc();
+    if (options.locations) tokEndLoc = new line_loc_t();
     tokType = type;
     skipSpace();
     tokVal = val;
@@ -506,19 +496,28 @@
 
   function skipBlockComment() {
     if (options.onComment && options.locations)
-      var startLoc = curLineLoc();
+      var startLoc = new line_loc_t();
     var start = tokPos, end = input.indexOf("*/", tokPos += 2);
     if (end === -1) raise(tokPos - 2, "Unterminated comment");
     tokPos = end + 2;
+    var comment = input.slice(start + 2, end);
+    if (options.locations) {
+      var match = comment.match(lineBreak);
+      if(match) {
+        tokCurLine += match.length;
+        var lastMatch = match[match.length-1];
+        tokLineStart = input.lastIndexOf(lastMatch,tokPos) + lastMatch.length;
+      }
+    }
     if (options.onComment)
-      options.onComment(true, input.slice(start + 2, end), start, tokPos,
-                        startLoc, options.locations && curLineLoc());
+      options.onComment(true, comment, start, tokPos,
+                        startLoc, options.locations && true);
   }
 
   function skipLineComment() {
     var start = tokPos;
     if (options.onComment && options.locations)
-      var startLoc = curLineLoc();
+      var startLoc = new line_loc_t();
     tokPos += 2;
     var ch = input.charCodeAt(tokPos);
     while (tokPos < inputLen && ch !== 10 && ch !== 13 && ch !== 8232 && ch !== 8329) {
@@ -527,7 +526,7 @@
     }
     if (options.onComment)
       options.onComment(false, input.slice(start + 2, tokPos - 1), start, tokPos,
-                        startLoc, options.locations && curLineLoc());
+                        startLoc, options.locations);
   }
 
   // Called at the start of the parse and after every token. Skips
@@ -538,6 +537,20 @@
       var ch = input.charCodeAt(tokPos);
       if (ch === 32) { // ' '
         ++tokPos;
+      } else if(ch === 13) {
+        ++tokPos;
+        var next = input.charCodeAt(tokPos);
+        if(next === 10) {
+          ++tokPos;
+        }
+        if(options.locations) {
+          ++tokCurLine;
+          tokLineStart = tokPos;
+        }
+      } else if (ch === 10) {
+        ++tokPos;
+        ++tokCurLine;
+        tokLineStart = tokPos;
       } else if(ch < 14 && ch > 8) {
         ++tokPos;
       } else if (ch === 47) { // '/'
@@ -695,14 +708,14 @@
 
   function readToken_forceRegexp() {
     tokStart = tokPos;
-    if (options.locations) tokStartLoc = curLineLoc();
+    if (options.locations) tokStartLoc = new line_loc_t();
     tokCommentsBefore = tokComments;
     return readRegexp();
   }
 
   function readToken() {
     tokStart = tokPos;
-    if (options.locations) tokStartLoc = curLineLoc();
+    if (options.locations) tokStartLoc = new line_loc_t();
     if (tokPos >= inputLen) return finishToken(_eof);
 
     var code = input.charCodeAt(tokPos);
@@ -877,8 +890,14 @@
           case 98: rs_str.push(8); break; // 'b' -> '\b'
           case 118: rs_str.push(11); break; // 'v' -> '\u000b'
           case 102: rs_str.push(12); break; // 'f' -> '\f'
-          case 13: if (input.charCodeAt(tokPos) === 10) ++tokPos; // '\r\n'
-          case 10: break; // ' \n'
+          case 13: // '\r'
+            if (input.charCodeAt(tokPos) === 10) ++tokPos; // '\r\n'
+          case 10: // ' \n'
+            if(options.locations) {
+              tokLineStart = tokPos;
+              ++tokCurLine;
+            }
+            break;
 
           default:
             if(ch < 48 || ch > 55) rs_str.push(ch); // 0-7 -> possible octal
@@ -1151,7 +1170,7 @@
   function parseTopLevel(program) {
     initTokenState();
     lastStart = lastEnd = tokPos;
-    if (options.locations) lastEndLoc = curLineLoc();
+    if (options.locations) lastEndLoc = new line_loc_t();
     inFunction = strict = null;
     labels = [];
     readToken();
