@@ -958,41 +958,36 @@
   function readNumber(code) {
     var startCode = code;
     var start = tokPos;
-    var isFloat = false;
-    var isExp = false;
-    var octalFail = false;
+    var flags = 0;  // FLOAT | EXP | OCTAL
     var prev = -1;
-    var str = '';
-    var val = 0;
 
     while(tokPos < inputLen) {
       if(code === 46) { // '.'
-        if(isFloat) {
+        if(flags & 1) {
           break;
         } else {
-          isFloat = true;
+          flags |= 1;
         }
       } else if (code === 43 || code === 45) { // '+-'
         if(prev !== 101 && prev !== 69) { // 'eE'
           break;
         }
       } else if (code === 101 || code === 69) { // 'eE'
-        if(isExp) {
+        if(flags & 2) {
           raise(tokPos, "Identifier directly after number");
           break;
         } else {
-          isExp = true;
-          isFloat = true;
+          flags |= 3;
         }
       } else if(isIdentifierStart(input.charCodeAt(tokPos))) {
-        if(isExp) {
+        if(flags & 2) {
           raise(start, "Invalid number");
         } else {
           raise(tokPos, "Identifier directly after number");
         }
         break;
       } else if (code === 56 || code === 57) { // 89
-        octalFail = true;
+        flags |= 4;
       } else if (code < 48 || code > 57) { // 0-9
         break;
       }
@@ -1000,24 +995,22 @@
       code = input.charCodeAt(++tokPos);
     }
 
-    if(prev === 101 || prev === 69 || prev === 43 || prev === 45) {
+    if(flags & 3 && (prev === 101 || prev === 69 || prev === 43 || prev === 45)) {
       raise(start, "Invalid number");
     }
 
-    str = input.substring(start, tokPos);
-
-    if(isFloat) {
-      val = parseFloat(str);
-    } else if(startCode !== 48 || str.length === 1) {
-      val = parseInt(str,10);
-    } else if (strict || octalFail) {
+    if(flags & 1) {
+      code = parseFloat(input.substring(start, tokPos));
+    } else if(startCode !== 48 || (tokPos - start) === 1) {
+      code = parseInt(input.substring(start, tokPos),10);
+    } else if (strict || flags & 4) {
       raise(start, "Invalid number");
     } else {
-      val = parseInt(str, 8);
+      code = parseInt(input.substring(start, tokPos), 8);
     }
 
     tokRegexpAllowed = false;
-    return finishToken(_num, val);
+    return finishToken(_num, code);
   }
 
   // Read a string value, interpreting backslash-escapes.
