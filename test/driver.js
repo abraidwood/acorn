@@ -24,7 +24,7 @@
         }
       } catch(e) {
         if (test.error && e instanceof SyntaxError) {
-          if (e.message == test.error) callback("ok", test.code);
+          if (e.message.replace(/\([0-9]+:[0-9]+\)/,'') == test.error.replace(/\([0-9]+:[0-9]+\)/,'') ) callback("ok", test.code);
           else callback("fail", test.code,
                         "Expected error message: " + test.error + "\nGot error message: " + e.message);
         } else {
@@ -52,7 +52,7 @@
         if (mis) return addPath(mis, i);
       }
     } else {
-      for (var prop in exp) {
+      for (var prop in exp) {if(prop === 'loc' || prop === 'start' || prop === 'end' || prop === 'raw') {continue;}
         var mis = misMatch(exp[prop], act[prop]);
         if (mis) return addPath(mis, prop);
       }
