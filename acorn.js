@@ -905,16 +905,27 @@
 
   function readRegexp() {
     var content = "", escaped, inClass, start = tokPos;
+    var flags = 0; // ESCAPED | IN CLASS
+    var ch = 0;
+
     for (;;) {
-      if (tokPos >= inputLen) raise(start, "Unterminated regular expression");
-      var ch = input.charAt(tokPos);
-      if (newline.test(ch)) raise(start, "Unterminated regular expression");
-      if (!escaped) {
-        if (ch === "[") inClass = true;
-        else if (ch === "]" && inClass) inClass = false;
-        else if (ch === "/" && !inClass) break;
-        escaped = ch === "\\";
-      } else escaped = false;
+      ch = input.charCodeAt(tokPos);
+      if (tokPos >= inputLen || ch === 10 || ch === 13 || ch === 8232 || ch === 8329) {
+        raise(start, "Unterminated regular expression");
+      }
+      if (flags & 1) { // escaped
+        flags &= 2; // escaped = false
+      } else {
+        if (ch === 91) { // '['
+          flags |= 2; // inclass = true
+        } else if (ch === 93 && flags & 2) {
+          flags &= 1; // inclass = false
+        } else if (ch === 47 && flags & 2 ^ 2) { // inclass == false
+          break;
+        } else if (ch === 92) {
+          flags |= 1; // escaped = true
+        }
+      }
       ++tokPos;
     }
     content = input.substring(start, tokPos);
