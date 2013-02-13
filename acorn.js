@@ -819,39 +819,74 @@
     tokRegexpAllowed = true;
   }
 
+  var str_lt_lt_eq = String('<<=');
+  var str_lt_lt = String('<<');
+  var str_lt = String('<');
+  var str_lt_eq = String('<=');
+
   function readToken_lt() { // '<'
     nextChar = input.charCodeAt(tokPos+1);
     var size = 1;
     if (nextChar === 60) {
       if (input.charCodeAt(tokPos + 2) === 61) {
-        finishOp(_assign, 3);
+        tokPos += 3;
+        finishToken(_assign, str_lt_lt_eq);
       } else {
-        finishOp(_bin8, 2);
+        tokPos += 2;
+        finishToken(_bin8, str_lt_lt);
       }
     } else {
-      if (nextChar === 61)
-        size = input.charCodeAt(tokPos+2) === 61 ? 3 : 2;
-      finishOp(_bin7, size);
+      if (nextChar === 61) {
+        tokPos += 2;
+        finishToken(_bin8, str_lt_eq);
+      } else {
+        ++tokPos;
+        finishToken(_bin8, str_lt);
+      }
     }
+    tokRegexpAllowed = true;
   }
+
+  var str_gt_gt_eq = String('>>=');
+  var str_gt_gt = String('>>');
+  var str_gt_gt_gt = String('>>>');
+  var str_gt_gt_gt_eq = String('>>>=');
+  var str_gt = String('>');
+  var str_gt_eq = String('>=');
 
   function readToken_gt() { // '>'
     nextChar = input.charCodeAt(tokPos+1);
     var size = 1;
     if (nextChar === 62) {
-      size = input.charCodeAt(tokPos+2) === 62 ? 3 : 2;
-      if (input.charCodeAt(tokPos + size) === 61) {
-        finishOp(_assign, size + 1);
+      nextChar = input.charCodeAt(tokPos + 2);
+
+      if (nextChar === 61) {
+        tokPos += 3;
+        finishToken(_assign, str_gt_gt_eq);
+      } else if (nextChar === 62) {
+        nextChar = input.charCodeAt(tokPos + 3);
+        if (nextChar === 61) {
+          tokPos += 4;
+          finishToken(_assign, str_gt_gt_gt_eq);
+        } else {
+          tokPos += 3;
+          finishToken(_bin8, str_gt_gt_gt);
+        }
       } else {
-        finishOp(_bin8, size);
+        tokPos += 2;
+        finishToken(_bin8, str_gt_gt);
       }
     } else {
-      if (nextChar === 61)
-        size = input.charCodeAt(tokPos+2) === 61 ? 3 : 2;
-      finishOp(_bin7, size);
+      if (nextChar === 61) {
+        tokPos += 2;
+        finishToken(_bin8, str_gt_eq);
+      } else {
+        ++tokPos;
+        finishToken(_bin8, str_gt);
+      }
     }
+    tokRegexpAllowed = true;
   }
-
   var str_excl = String('!');
   var str_excl_eq = String('!=');
   var str_excl_eq_eq = String('!==');
@@ -891,6 +926,14 @@
       ++tokPos;
       finishToken(_eq, str_eq);
     }
+    tokRegexpAllowed = true;
+  }
+
+  var str_tilde = String('~');
+
+  function readToken_tilde() {
+    ++tokPos;
+    finishToken(_prefix, str_tilde);
     tokRegexpAllowed = true;
   }
 
@@ -950,7 +993,7 @@
     case 62: readToken_gt(code); break;
     case 61: readToken_eq(); break;
     case 33: readToken_excl(); break;
-    case 126: finishOp(_prefix, 1); break;
+    case 126: readToken_tilde(); break;
 
     case 37: readToken_modulo(); break; // '%*'
     case 42: readToken_mult(); break; // '%*'
@@ -995,13 +1038,6 @@
     //   raise(tokPos, "Unexpected character '" + ch + "'");
     // }
     // return tok;
-  }
-
-  function finishOp(type, size) {
-    var str = input.substr(tokPos, size);
-    tokPos += size;
-    tokRegexpAllowed = true;
-    finishToken(type, str);
   }
 
   // Parse a regular expression. Some context-awareness is necessary,
