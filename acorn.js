@@ -681,8 +681,8 @@
     }
   }
 
-  var str_slash = String('/');
-  var str_slash_eq = String('/=');
+  var str_slash = new String('/');
+  var str_slash_eq = new String('/=');
 
   function readToken_slash() { // '/'
     nextChar = input.charCodeAt(tokPos+1);
@@ -700,8 +700,8 @@
     }
   }
 
-  var str_mult = String('*');
-  var str_mult_eq = String('*=');
+  var str_mult = new String('*');
+  var str_mult_eq = new String('*=');
 
   function readToken_mult() { // '%*'
     nextChar = input.charCodeAt(tokPos+1);
@@ -714,8 +714,8 @@
     }
     tokRegexpAllowed = true;
   }
-  var str_modulo = String('%');
-  var str_modulo_eq = String('%=');
+  var str_modulo = new String('%');
+  var str_modulo_eq = new String('%=');
 
   function readToken_modulo() { // '%*'
     nextChar = input.charCodeAt(tokPos+1);
@@ -729,9 +729,9 @@
     tokRegexpAllowed = true;
   }
 
-  var str_pipe = String('|');
-  var str_pipe_eq = String('|=');
-  var str_pipe_pipe = String('||');
+  var str_pipe = new String('|');
+  var str_pipe_eq = new String('|=');
+  var str_pipe_pipe = new String('||');
 
   function readToken_pipe(code) { // '|'
     nextChar = input.charCodeAt(tokPos+1);
@@ -748,9 +748,9 @@
     tokRegexpAllowed = true;
   }
 
-  var str_amp = String('&');
-  var str_amp_eq = String('&=');
-  var str_amp_amp = String('&&');
+  var str_amp = new String('&');
+  var str_amp_eq = new String('&=');
+  var str_amp_amp = new String('&&');
 
   function readToken_amp() { // '&'
     nextChar = input.charCodeAt(tokPos+1);
@@ -767,8 +767,8 @@
     tokRegexpAllowed = true;
   }
 
-  var str_caret = String('^');
-  var str_caret_eq = String('^=');
+  var str_caret = new String('^');
+  var str_caret_eq = new String('^=');
 
   function readToken_caret() { // '^'
     nextChar = input.charCodeAt(tokPos+1);
@@ -781,9 +781,9 @@
     }
     tokRegexpAllowed = true;
   }
-  var str_plus = String('+');
-  var str_plus_eq = String('+=');
-  var str_plus_plus = String('++');
+  var str_plus = new String('+');
+  var str_plus_eq = new String('+=');
+  var str_plus_plus = new String('++');
 
   function readToken_plus() { // '+-'
     nextChar = input.charCodeAt(tokPos+1);
@@ -800,9 +800,9 @@
     tokRegexpAllowed = true;
   }
 
-  var str_min = String('-');
-  var str_min_eq = String('-=');
-  var str_min_min = String('--');
+  var str_min = new String('-');
+  var str_min_eq = new String('-=');
+  var str_min_min = new String('--');
 
   function readToken_min() { // '+-'
     nextChar = input.charCodeAt(tokPos+1);
@@ -819,10 +819,10 @@
     tokRegexpAllowed = true;
   }
 
-  var str_lt_lt_eq = String('<<=');
-  var str_lt_lt = String('<<');
-  var str_lt = String('<');
-  var str_lt_eq = String('<=');
+  var str_lt_lt_eq = new String('<<=');
+  var str_lt_lt = new String('<<');
+  var str_lt = new String('<');
+  var str_lt_eq = new String('<=');
 
   function readToken_lt() { // '<'
     nextChar = input.charCodeAt(tokPos+1);
@@ -847,12 +847,12 @@
     tokRegexpAllowed = true;
   }
 
-  var str_gt_gt_eq = String('>>=');
-  var str_gt_gt = String('>>');
-  var str_gt_gt_gt = String('>>>');
-  var str_gt_gt_gt_eq = String('>>>=');
-  var str_gt = String('>');
-  var str_gt_eq = String('>=');
+  var str_gt_gt_eq = new String('>>=');
+  var str_gt_gt = new String('>>');
+  var str_gt_gt_gt = new String('>>>');
+  var str_gt_gt_gt_eq = new String('>>>=');
+  var str_gt = new String('>');
+  var str_gt_eq = new String('>=');
 
   function readToken_gt() { // '>'
     nextChar = input.charCodeAt(tokPos+1);
@@ -887,9 +887,9 @@
     }
     tokRegexpAllowed = true;
   }
-  var str_excl = String('!');
-  var str_excl_eq = String('!=');
-  var str_excl_eq_eq = String('!==');
+  var str_excl = new String('!');
+  var str_excl_eq = new String('!=');
+  var str_excl_eq_eq = new String('!==');
 
   function readToken_excl() { // '!'
     nextChar = input.charCodeAt(tokPos+1);
@@ -908,9 +908,9 @@
     tokRegexpAllowed = true;
   }
 
-  var str_eq = String('=');
-  var str_eq_eq = String('==');
-  var str_eq_eq_eq = String('===');
+  var str_eq = new String('=');
+  var str_eq_eq = new String('==');
+  var str_eq_eq_eq = new String('===');
 
   function readToken_eq() { // '='
     nextChar = input.charCodeAt(tokPos+1);
@@ -929,7 +929,7 @@
     tokRegexpAllowed = true;
   }
 
-  var str_tilde = String('~');
+  var str_tilde = new String('~');
 
   function readToken_tilde() {
     ++tokPos;
