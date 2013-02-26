@@ -1829,7 +1829,7 @@
         if (isBreak) break;
       }
     }
-    if (i === leni) raise(/*node.start,*/ tokPos, "Unsyntactic " + starttype.keyword);
+    if (i === leni) raise(tokPos, "Unsyntactic " + starttype.keyword);
   }
 
   function parseStatement_break() {
@@ -2009,7 +2009,7 @@
       expect(_parenL);
       clause.param = parseIdent();
       if (strict && isStrictBadIdWord(clause.param.name))
-        raise(clause.param.start, "Binding " + clause.param.name + " in strict mode");
+        raise(tokPos, "Binding " + clause.param.name + " in strict mode");
       expect(_parenR);
       clause.body = parseBlock();
       node.handler = clause;
@@ -2018,7 +2018,7 @@
       node.finalizer = parseBlock();
     }
     if (!node.handler && !node.finalizer)
-      raise(node.start, "Missing catch or finally clause");
+      raise(tokPos, "Missing catch or finally clause");
     node.type = "TryStatement";
     return node;
   }
@@ -2067,12 +2067,17 @@
     if (starttype === _name && expr instanceof Identifier && eat(_colon)) {
       node = new LabeledStatement()
       for (var i = 0, leni = labels.length; i < leni; ++i)
-        if (labels[i].name === maybeName) raise(expr.start, "Label '" + maybeName + "' is already declared");
+        if (labels[i].name === maybeName) raise(tokPos, "Label '" + maybeName + "' is already declared");
       var label = new Label(maybeName);
-      if(tokType.isLoop) {
-        label.kind = 'loop';
-      } else if (tokType === _switch) {
-        label.kind = 'switch';
+      switch(tokType) {
+        case _do:
+        case _for:
+        case _while:
+          label.kind = 'loop';
+          break;
+        case _switch:
+          label.kind = 'switch';
+          break;
       }
       labels.push(label);
       node.body = parseStatement();
@@ -2185,7 +2190,7 @@
       var decl = new VariableDeclarator();
       decl.id = parseIdent();
       if (strict && isStrictBadIdWord(decl.id.name))
-        raise(decl.id.start, "Binding " + decl.id.name + " in strict mode");
+        raise(tokPos, "Binding " + decl.id.name + " in strict mode");
       if(eat(_eq)) {
         decl.init = parseExpression_noComma(noIn);
       }
@@ -2311,7 +2316,7 @@
         node.argument = parseMaybeUnary(noIn);
         if (strict && node.operator === "delete" &&
                node.argument.type === "Identifier")
-        raise(node.start, "Deleting local variable in strict mode");
+        raise(tokPos, "Deleting local variable in strict mode");
       }
       return node;
     } else {
@@ -2474,39 +2479,54 @@
 
   // Parse an object literal.
 
+    var PropertyKinds = {
+        'init': new String('init'),
+        'get': new String('get'),
+        'set': new String('set')
+    };
+
   function parseObj() {
     var node = new ObjectExpression(), sawGetSet = false;
+    var flags = 0; // SAW A GET/SET | IS A GET/SET
     next();
 
     if (!eat(_braceR)) {
       for(;;) {
         var prop = new ObjectExpressionProp();
         prop.key = parsePropertyName();
-        var isGetSet = false;
+        flags &= 2;
         if (eat(_colon)) {
           prop.value = parseExpression_noComma(false);
-          prop.kind = "init";
-        } else if (options.ecmaVersion >= 5 && prop.key.type === "Identifier" &&
-                 (prop.key.name === "get" || prop.key.name === "set")) {
-        isGetSet = sawGetSet = true;
-        prop.kind = prop.key.name;
-        prop.key = parsePropertyName();
-        if (!tokType === _parenL) unexpected();
-        prop.value = parseFunction(new FunctionExpression(), false);
-      } else unexpected();
+          prop.kind = PropertyKinds.init;
+        } else if (options.ecmaVersion >= 5 && prop.key instanceof Identifier) {
+          if (prop.key.name === "get") {
+            flags = 3;
+            prop.kind = PropertyKinds.get;
+            prop.key = parsePropertyName();
+            if (!tokType === _parenL) unexpected();
+            prop.value = parseFunction(new FunctionExpression(), false);
+          } else if (prop.key.name === "set") {
+            flags = 3;
+            prop.kind = PropertyKinds.set;
+            prop.key = parsePropertyName();
+            if (!tokType === _parenL) unexpected();
+            prop.value = parseFunction(new FunctionExpression(), false);
+          } else unexpected();
+        } else unexpected();
 
         // getters and setters are not allowed to clash — either with
         // each other or with an init property — and in strict mode,
         // init properties are also not allowed to be repeated.
 
-        if (prop.key.type === "Identifier" && (strict || sawGetSet)) {
+        if (prop.key instanceof Identifier && (strict || flags & 2)) {
           for (var i = 0, leni = node.properties.length; i < leni; ++i) {
             var other = node.properties[i];
             if (other.key.name === prop.key.name) {
-              var conflict = prop.kind == other.kind || isGetSet && other.kind === "init" ||
-                prop.kind === "init" && (other.kind === "get" || other.kind === "set");
-              if (conflict && !strict && prop.kind === "init" && other.kind === "init") conflict = false;
-              if (conflict) raise(prop.key.start, "Redefinition of property");
+              var conflict = prop.kind == other.kind ||
+                             flags & 1 && other.kind === PropertyKinds.init ||
+                             prop.kind === PropertyKinds.init && (other.kind === PropertyKinds.get || other.kind === PropertyKinds.set);
+              if (conflict && !strict && prop.kind === PropertyKinds.init && other.kind === PropertyKinds.init) conflict = false;
+              if (conflict) raise(tokPos, "Redefinition of property");
             }
           }
         }
@@ -2559,9 +2579,9 @@
       for (var i = node.id ? -1 : 0, leni = node.params.length; i < leni; ++i) {
         var id = i < 0 ? node.id : node.params[i];
         if (isStrictReservedWord(id.name) || isStrictBadIdWord(id.name))
-          raise(id.start, "Defining '" + id.name + "' in strict mode");
+          raise(tokPos, "Defining '" + id.name + "' in strict mode");
         if (i >= 0) for (var j = 0; j < i; ++j) if (id.name === node.params[j].name)
-          raise(id.start, "Argument name clash in strict mode");
+          raise(tokPos, "Argument name clash in strict mode");
       }
     }
 
