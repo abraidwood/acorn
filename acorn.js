@@ -479,9 +479,9 @@
       'left_shift'            : new String('<<='),
       'right_shift'           : new String('>>='),
       'zero_fill_right_shift' : new String('>>>='),
-      'pipe'                  : new String('|='),
-      'caret'                 : new String('^='),
-      'amp'                   : new String('&=')
+      'OR'                  : new String('|='),
+      'XOR'                 : new String('^='),
+      'AND'                   : new String('&=')
   };
 
   var BinaryOperator = {
@@ -501,9 +501,9 @@
       'mult'                  : new String('*'),
       'div'                   : new String('/'),
       'modulo'                : new String('%'),
-      'pipe'                  : new String('|'),
-      'amp'                   : new String('&'),
-      'caret'                 : new String('^'),
+      'OR'                  : new String('|'),
+      'AND'                   : new String('&'),
+      'XOR'                 : new String('^'),
       'in'                    : new String('in'),
       'instanceof'            : new String('instanceof')
   };
@@ -522,7 +522,7 @@
       'minus': new String('-'),
       'plus': new String('+'),
       'ex': new String('!'),
-      'tilde': new String('~'),
+      'BITWISE_NOT': new String('~'),
       'typeof': new String('typeof'),
       'void': new String('void'),
       'delete': new String('delete')
@@ -1047,7 +1047,7 @@
     tokRegexpAllowed = true;
   }
 
-  function readToken_pipe() { // '|'
+  function readToken_OR() { // '|'
     ++tokPos;
     nextChar = input.charCodeAt(tokPos);
     if (nextChar === 124) {
@@ -1055,14 +1055,14 @@
       finishToken(_bin1, LogicalOperator.OR);
     } else if (nextChar === 61) {
       ++tokPos;
-      finishToken(_assign, AssignmentOperator.pipe);
+      finishToken(_assign, AssignmentOperator.OR);
     } else {
-      finishToken(_bin3, BinaryOperator.pipe);
+      finishToken(_bin3, BinaryOperator.OR);
     }
     tokRegexpAllowed = true;
   }
 
-  function readToken_amp() { // '&'
+  function readToken_AND() { // '&'
     ++tokPos;
     nextChar = input.charCodeAt(tokPos);
     if (nextChar === 38) {
@@ -1070,21 +1070,21 @@
       finishToken(_bin2, LogicalOperator.AND);
     } else if (nextChar === 61) {
       ++tokPos;
-      finishToken(_assign, AssignmentOperator.amp);
+      finishToken(_assign, AssignmentOperator.AND);
     } else {
-      finishToken(_bin5, BinaryOperator.amp);
+      finishToken(_bin5, BinaryOperator.AND);
     }
     tokRegexpAllowed = true;
   }
 
-  function readToken_caret() { // '^'
+  function readToken_XOR() { // '^'
     ++tokPos;
     nextChar = input.charCodeAt(tokPos);
     if (nextChar === 61) {
       ++tokPos;
-      finishToken(_assign, AssignmentOperator.caret);
+      finishToken(_assign, AssignmentOperator.XOR);
     } else {
-      finishToken(_bin4, BinaryOperator.caret);
+      finishToken(_bin4, BinaryOperator.XOR);
     }
     tokRegexpAllowed = true;
   }
@@ -1210,9 +1210,9 @@
     tokRegexpAllowed = true;
   }
 
-  function readToken_tilde() {
+  function readToken_BITWISE_NOT() {
     ++tokPos;
-    finishToken(_prefix, UnaryOperator.tilde);
+    finishToken(_prefix, UnaryOperator.BITWISE_NOT);
     tokRegexpAllowed = true;
   }
 
@@ -1267,14 +1267,14 @@
     case 34: case 39: readString(code); break;
 
     case 47: readToken_slash(); break;
-    case 124: readToken_pipe(); break;
-    case 38: readToken_amp(); break;
-    case 94: readToken_caret(); break;
+    case 124: readToken_OR(); break;
+    case 38: readToken_AND(); break;
+    case 94: readToken_XOR(); break;
     case 60: readToken_lt(); break;
     case 62: readToken_gt(); break;
     case 61: readToken_eq(); break;
     case 33: readToken_excl(); break;
-    case 126: readToken_tilde(); break;
+    case 126: readToken_BITWISE_NOT(); break;
 
     case 37: readToken_modulo(); break;
     case 42: readToken_mult(); break;
@@ -1747,16 +1747,7 @@
     return tokType === _eof || tokType === _braceR || newline.test(input.substring(lastEnd, tokStart));
   }
 
-  function eatSemi_canInsertSemicolon() {
-    if(tokType === _semi) {
-      next();
-      return true;
-    } else {
-      return tokType === _eof || tokType === _braceR || newline.test(input.substring(lastEnd, tokStart));
-    }
-  }
-
-  function not_eatSemi_canInsertSemicolon() {
+  function not_semicolon() {
     if(tokType === _semi) {
       next();
       return false;
@@ -1768,7 +1759,7 @@
   // pretend that there is a semicolon at this position.
 
   function semicolon() {
-    if (not_eatSemi_canInsertSemicolon()) unexpected();
+    if (not_semicolon()) unexpected();
   }
 
   // Expect a token of a given type. If found, consume it, otherwise,
@@ -1853,14 +1844,14 @@
     if (i === leni) raise(tokPos, "Unsyntactic " + starttype.keyword);
   }
 
-  function parseStatement_break() {
+  function parse_BreakStatement() {
     var starttype = tokType, node = new BreakStatement();
     next();
 
-    if (not_eatSemi_canInsertSemicolon()) {
+    if (not_semicolon()) {
       if (tokType !== _name) unexpected();
       else {
-        node.label = parseIdent();
+        node.label = parse_Identifier();
         semicolon();
       }
     }
@@ -1868,14 +1859,14 @@
     return node;
   }
 
-  function parseStatement_continue() {
+  function parse_ContinueStatement() {
     var starttype = tokType, node = new ContinueStatement();
     next();
 
-    if (not_eatSemi_canInsertSemicolon()) {
+    if (not_semicolon()) {
       if (tokType !== _name) unexpected();
       else {
-        node.label = parseIdent();
+        node.label = parse_Identifier();
         semicolon();
       }
     }
@@ -1883,7 +1874,7 @@
     return node;
   }
 
-  function parseStatement_debugger() {
+  function parse_DebuggerStatement() {
     var node = new DebuggerStatement();
     next();
     semicolon();
@@ -1891,7 +1882,7 @@
     return node;
   }
 
-  function parseStatement_do() {
+  function parse_DoWhileStatement() {
     var node = new DoWhileStatement();
     next();
     labels.push(loopLabel);
@@ -1918,15 +1909,15 @@
     next();
     labels.push(loopLabel);
     expect(_parenL);
-    if (tokType === _semi) return parseFor();
+    if (tokType === _semi) return parse_ForStatement();
     if (tokType === _var) {
       next();
       init = parseVar(true);
       if (init.declarations.length === 1 && eat(_in)) {
-        node = parseForIn();
+        node = parse_ForInStatement();
         node.left = init;
       } else {
-        node = parseFor();
+        node = parse_ForStatement();
         node.init = init;
       }
       return node;
@@ -1934,22 +1925,22 @@
     init = parseExpression(true);
     if (eat(_in)) {
       checkLVal(init);
-      node = parseForIn();
+      node = parse_ForInStatement();
       node.left = init;
     } else {
-      node = parseFor();
+      node = parse_ForStatement();
       node.init = init;
     }
     return node;
   }
 
-  function parseStatement_function() {
+  function parse_Function() {
     var node = new FunctionDeclaration();
     next();
     return parseFunction(node, true);
   }
 
-  function parseStatement_if() {
+  function parse_IfStatement() {
     var node = new IfStatement();
     next();
     node.test = parseParenExpression();
@@ -1960,7 +1951,7 @@
     return node;
   }
 
-  function parseStatement_return() {
+  function parse_ReturnStatement() {
     var node = new ReturnStatement();
     if (!inFunction) raise(tokStart, "'return' outside of function");
     next();
@@ -1969,11 +1960,11 @@
     // optional arguments, we eagerly look for a semicolon or the
     // possibility to insert one.
 
-    if (not_eatSemi_canInsertSemicolon()) { node.argument = parseExpression(false); semicolon(); }
+    if (not_semicolon()) { node.argument = parseExpression(false); semicolon(); }
     return node;
   }
 
-  function parseStatement_switch() {
+  function parse_SwitchStatement() {
     var node = new SwitchStatement();
     var cur = null, sawDefault = false;
     next();
@@ -2010,7 +2001,7 @@
     return node;
   }
 
-  function parseStatement_throw() {
+  function parse_ThrowStatement() {
     var node = new ThrowStatement();
     next();
     if (newline.test(input.substring(lastEnd, tokStart)))
@@ -2020,23 +2011,23 @@
     return node;
   }
 
-  function parseStatement_try() {
+  function parse_TryStatement() {
     var node = new TryStatement();
     next();
-    node.block = parseBlock();
+    node.block = parse_BlockStatement();
     while (tokType === _catch) {
       var clause = new CatchClause();
       next();
       expect(_parenL);
-      clause.param = parseIdent();
+      clause.param = parse_Identifier();
       if (strict && isStrictBadIdWord(clause.param.name))
         raise(tokPos, "Binding " + clause.param.name + " in strict mode");
       expect(_parenR);
-      clause.body = parseBlock();
+      clause.body = parse_BlockStatement();
       node.handler = clause;
     }
     if(eat(_finally)) {
-      node.finalizer = parseBlock();
+      node.finalizer = parse_BlockStatement();
     }
     if (!node.handler && !node.finalizer)
       raise(tokPos, "Missing catch or finally clause");
@@ -2051,7 +2042,7 @@
     return node;
   }
 
-  function parseStatement_while() {
+  function parse_WhileStatement() {
     var node = new WhileStatement();
     next();
     node.test = parseParenExpression();
@@ -2061,7 +2052,7 @@
     return node;
   }
 
-  function parseStatement_with() {
+  function parse_WithStatement() {
     var node = new WithStatement();
     if (strict) raise(tokStart, "'with' in strict mode");
     next();
@@ -2070,7 +2061,7 @@
     return node;
   }
 
-  function parseStatement_semi() {
+  function parse_EmptyStatement() {
     var node = new EmptyStatement();
     next();
     return node;
@@ -2119,22 +2110,22 @@
     // complexity.
 
     switch (tokType) {
-      case _break: return parseStatement_break();
-      case _continue: return parseStatement_continue();
-      case _debugger: return parseStatement_debugger();
-      case _do: return parseStatement_do();
+      case _break: return parse_BreakStatement();
+      case _continue: return parse_ContinueStatement();
+      case _debugger: return parse_DebuggerStatement();
+      case _do: return parse_DoWhileStatement();
       case _for: return parseStatement_for();
-      case _function: return parseStatement_function();
-      case _if: return parseStatement_if();
-      case _return: return parseStatement_return();
-      case _switch: return parseStatement_switch();
-      case _throw: return parseStatement_throw();
-      case _try: return parseStatement_try();
+      case _function: return parse_Function();
+      case _if: return parse_IfStatement();
+      case _return: return parse_ReturnStatement();
+      case _switch: return parse_SwitchStatement();
+      case _throw: return parse_ThrowStatement();
+      case _try: return parse_TryStatement();
       case _var: return parseStatement_var();
-      case _while: return parseStatement_while();
-      case _with: return parseStatement_with();
-      case _braceL: return parseBlock();
-      case _semi: return parseStatement_semi();
+      case _while: return parse_WhileStatement();
+      case _with: return parse_WithStatement();
+      case _braceL: return parse_BlockStatement();
+      case _semi: return parse_EmptyStatement();
       case _slash:
         readToken_forceRegexp();
         return parseStatement_default();
@@ -2159,7 +2150,7 @@
   // strict"` declarations when `allowStrict` is true (used for
   // function bodies).
 
-  function parseBlock(allowStrict) {
+  function parse_BlockStatement(allowStrict) {
     var node = new BlockStatement(), strict = false, oldStrict;
     expect(_braceL);
     if(!eat(_braceR)) {
@@ -2180,7 +2171,7 @@
   // `parseStatement` will already have parsed the init statement or
   // expression.
 
-  function parseFor() {
+  function parse_ForStatement() {
     var node = new ForStatement();
     expect(_semi);
     if (tokType !== _semi) node.test = parseExpression(false);
@@ -2194,7 +2185,7 @@
 
   // Parse a `for`/`in` loop.
 
-  function parseForIn() {
+  function parse_ForInStatement() {
     var node = new ForInStatement();
     node.right = parseExpression(false);
     expect(_parenR);
@@ -2209,7 +2200,7 @@
     var node = new VariableDeclaration();
     for (;;) {
       var decl = new VariableDeclarator();
-      decl.id = parseIdent();
+      decl.id = parse_Identifier();
       if (strict && isStrictBadIdWord(decl.id.name))
         raise(tokPos, "Binding " + decl.id.name + " in strict mode");
       if(eat(_eq)) {
@@ -2365,7 +2356,7 @@
     var node;
     if (eat(_dot)) {
       node = new MemberExpression_dot(base);
-      node.property = parseIdent_liberal();
+      node.property = parse_Identifier_liberal();
       return parseSubscripts(node);
     } else if (eat(_bracketL)) {
       node = new MemberExpression_bracketL(base);
@@ -2383,7 +2374,7 @@
     var node;
     if (eat(_dot)) {
       node = new MemberExpression_dot(base);
-      node.property = parseIdent_liberal();
+      node.property = parse_Identifier_liberal();
       return parseSubscripts_nocalls(node);
     } else if (eat(_bracketL)) {
       node = new MemberExpression_bracketL(base);
@@ -2398,44 +2389,44 @@
   // `new`, or an expression wrapped in punctuation like `()`, `[]`,
   // or `{}`.
 
-  function parseExprAtom_this() {
+  function parse_ThisExpression() {
     var node = new ThisExpression();
     next();
     return node;
   }
 
-  function parseExprAtom_num() {
+  function parse_Literal_Number() {
     var node = new Literal_number();
     node.value = tokVal;
     next();
     return node;
   }
 
-  function parseExprAtom_string() {
+  function parse_Literal_String() {
     var node = new Literal_string();
     node.value = tokVal;
     next();
     return node;
   }
 
-  function parseExprAtom_regexp() {
+  function parse_Literal_Regexp() {
     var node = new Literal_regexp();
     node.value = tokVal;
     next();
     return node;
   }
 
-  function parseExprAtom_null() {
+  function parse_Literal_Null() {
     var node = new Literal_null();
     next();
     return node;
   }
-  function parseExprAtom_true() {
+  function parse_Literal_True() {
     var node = new Literal_true();
     next();
     return node;
   }
-  function parseExprAtom_false() {
+  function parse_Literal_False() {
     var node = new Literal_false();
     next();
     return node;
@@ -2452,14 +2443,14 @@
     expect(_parenR);
     return val;
   }
-  function parseExprAtom_bracketL() {
+  function parse_ArrayExpression() {
     var node = new ArrayExpression();
     next();
     parseArrayExprList(node.elements, _bracketR);
     return node;
   }
 
-  function parseExprAtom_function() {
+  function parse_FunctionExpression() {
     var node = new FunctionExpression();
     next();
     return parseFunction(node, false);
@@ -2467,19 +2458,19 @@
 
   function parseExprAtom() {
     switch (tokType) {
-      case _new: return parseNew();
-      case _num: return parseExprAtom_num();
-      case _this: return parseExprAtom_this();
-      case _name: return parseIdent();
-      case _null: return parseExprAtom_null();
-      case _true: return parseExprAtom_true();
-      case _false: return parseExprAtom_false();
-      case _braceL: return parseObj();
-      case _string: return parseExprAtom_string();
-      case _regexp: return parseExprAtom_regexp();
+      case _new: return parse_NewExpression();
+      case _num: return parse_Literal_Number();
+      case _this: return parse_ThisExpression();
+      case _name: return parse_Identifier();
+      case _null: return parse_Literal_Null();
+      case _true: return parse_Literal_True();
+      case _false: return parse_Literal_False();
+      case _braceL: return parse_ObjectExpression();
+      case _string: return parse_Literal_String();
+      case _regexp: return parse_Literal_Regexp();
       case _parenL: return parseExprAtom_parenL();
-      case _bracketL: return parseExprAtom_bracketL();
-      case _function: return parseExprAtom_function();
+      case _bracketL: return parse_ArrayExpression();
+      case _function: return parse_FunctionExpression();
 
       default:
         unexpected();
@@ -2490,7 +2481,7 @@
   // to be a `[]` or dot subscript expression, but not a call — at
   // least, not without wrapping it in parentheses. Thus, it uses the
 
-  function parseNew() {
+  function parse_NewExpression() {
     var node = new NewExpression();
     next();
     node.callee = parseSubscripts_nocalls(parseExprAtom(false));
@@ -2506,7 +2497,7 @@
         'set': new String('set')
     };
 
-  function parseObj() {
+  function parse_ObjectExpression() {
     var node = new ObjectExpression();
     var flags = 0; // SAW A GET/SET | IS A GET/SET
     next();
@@ -2566,21 +2557,21 @@
 
   function parsePropertyName() {
     if (tokType === _num || tokType === _string) return parseExprAtom();
-    return parseIdent_liberal();
+    return parse_Identifier_liberal();
   }
 
   // Parse a function declaration or literal (depending on the
   // `isStatement` parameter).
 
   function parseFunction(node, isStatement) {
-    if (tokType === _name) node.id = parseIdent();
+    if (tokType === _name) node.id = parse_Identifier();
     else if (isStatement) unexpected();
 
     expect(_parenL);
 
     if(!eat(_parenR)) {
       for(;;) {
-        node.params.push(parseIdent());
+        node.params.push(parse_Identifier());
         if(eat(_parenR)) {break;}
         expect(_comma);
       }
@@ -2590,7 +2581,7 @@
     // flag (restore them to their old value afterwards).
     var oldInFunc = inFunction, oldLabels = labels;
     inFunction = true; labels = [];
-    node.body = parseBlock(true);
+    node.body = parse_BlockStatement(true);
     inFunction = oldInFunc; labels = oldLabels;
 
     // If this is a strict mode function, verify that argument names
@@ -2645,14 +2636,14 @@
   // when parsing properties), it will also convert keywords into
   // identifiers.
 
-  function parseIdent_liberal() {
+  function parse_Identifier_liberal() {
     var node = new Identifier();
     node.name = tokType === _name ? tokVal : (!options.forbidReserved && tokType.keyword) || unexpected();
     next();
     return node;
   }
 
-  function parseIdent() {
+  function parse_Identifier() {
     var node = new Identifier();
     node.name = tokType === _name ? tokVal : unexpected();
     next();
