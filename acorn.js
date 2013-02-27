@@ -469,55 +469,76 @@
     this.expression = false;
   }
 
-  var str_slash = new String('/');
-  var str_slash_eq = new String('/=');
+  var AssignmentOperator = {
+      'eq'                    : new String('='),
+      'plus'                  : new String('+='),
+      'minus'                 : new String('-='),
+      'mult'                  : new String('*='),
+      'div'                   : new String('/='),
+      'modulo'                : new String('%='),
+      'left_shift'            : new String('<<='),
+      'right_shift'           : new String('>>='),
+      'zero_fill_right_shift' : new String('>>>='),
+      'pipe'                  : new String('|='),
+      'caret'                 : new String('^='),
+      'amp'                   : new String('&=')
+  };
 
-  var str_mult = new String('*');
-  var str_mult_eq = new String('*=');
+  var BinaryOperator = {
+      'eq_eq'                 : new String('=='),
+      'ex_eq'                 : new String('!='),
+      'eq_eq_eq'              : new String('==='),
+      'ex_eq_eq'              : new String('!=='),
+      'lt'                    : new String('<'),
+      'lt_eq'                 : new String('<='),
+      'gt'                    : new String('>'),
+      'gt_eq'                 : new String('>='),
+      'left_shift'            : new String('<<'),
+      'right_shift'           : new String('>>'),
+      'zero_fill_right_shift' : new String('>>>'),
+      'plus'                  : new String('+'),
+      'minus'                 : new String('-'),
+      'mult'                  : new String('*'),
+      'div'                   : new String('/'),
+      'modulo'                : new String('%'),
+      'pipe'                  : new String('|'),
+      'amp'                   : new String('&'),
+      'caret'                 : new String('^'),
+      'in'                    : new String('in'),
+      'instanceof'            : new String('instanceof')
+  };
 
-  var str_modulo = new String('%');
-  var str_modulo_eq = new String('%=');
+  var LogicalOperator = {
+      'OR'  : new String('||'),
+      'AND' : new String('&&')
+  };
 
-  var str_pipe = new String('|');
-  var str_pipe_eq = new String('|=');
-  var str_pipe_pipe = new String('||');
+  var UpdateOperator = {
+      'increment' : new String('++'),
+      'decrement' : new String('--')
+  };
 
-  var str_amp = new String('&');
-  var str_amp_eq = new String('&=');
-  var str_amp_amp = new String('&&');
+  var UnaryOperator = {
+      'minus': new String('-'),
+      'plus': new String('+'),
+      'ex': new String('!'),
+      'tilde': new String('~'),
+      'typeof': new String('typeof'),
+      'void': new String('void'),
+      'delete': new String('delete')
+  };
 
-  var str_caret = new String('^');
-  var str_caret_eq = new String('^=');
+  var VariableDeclarationKind = {
+      'var': new String('var'),
+      'let': new String('let'),
+      'const': new String('const')
+  };
 
-  var str_plus = new String('+');
-  var str_plus_eq = new String('+=');
-  var str_plus_plus = new String('++');
-
-  var str_min = new String('-');
-  var str_min_eq = new String('-=');
-  var str_min_min = new String('--');
-
-  var str_lt_lt_eq = new String('<<=');
-  var str_lt_lt = new String('<<');
-  var str_lt = new String('<');
-  var str_lt_eq = new String('<=');
-
-  var str_gt_gt_eq = new String('>>=');
-  var str_gt_gt = new String('>>');
-  var str_gt_gt_gt = new String('>>>');
-  var str_gt_gt_gt_eq = new String('>>>=');
-  var str_gt = new String('>');
-  var str_gt_eq = new String('>=');
-
-  var str_excl = new String('!');
-  var str_excl_eq = new String('!=');
-  var str_excl_eq_eq = new String('!==');
-
-  var str_eq = new String('=');
-  var str_eq_eq = new String('==');
-  var str_eq_eq_eq = new String('===');
-
-  var str_tilde = new String('~');
+  var PropertyKind = {
+      'init': new String('init'),
+      'get': new String('get'),
+      'set': new String('set')
+  };
 
   // These are used when `options.locations` is on, in order to track
   // the current line number and start of line offset, in order to set
@@ -995,9 +1016,9 @@
 
     if (nextChar === 61) {
       ++tokPos;
-      finishToken(_assign, str_slash_eq);
+      finishToken(_assign, AssignmentOperator.div);
     } else {
-      finishToken(_slash, str_slash);
+      finishToken(_slash, BinaryOperator.div);
     }
     tokRegexpAllowed = true;
   }
@@ -1007,9 +1028,9 @@
     nextChar = input.charCodeAt(tokPos);
     if (nextChar === 61) {
       ++tokPos;
-      finishToken(_assign, str_mult_eq);
+      finishToken(_assign, AssignmentOperator.mult);
     } else {
-      finishToken(_bin10, str_mult);
+      finishToken(_bin10, BinaryOperator.mult);
     }
     tokRegexpAllowed = true;
   }
@@ -1019,9 +1040,9 @@
     nextChar = input.charCodeAt(tokPos);
     if (nextChar === 61) {
       ++tokPos;
-      finishToken(_assign, str_modulo_eq);
+      finishToken(_assign, AssignmentOperator.modulo);
     } else {
-      finishToken(_bin10, str_modulo);
+      finishToken(_bin10, BinaryOperator.modulo);
     }
     tokRegexpAllowed = true;
   }
@@ -1031,12 +1052,12 @@
     nextChar = input.charCodeAt(tokPos);
     if (nextChar === 124) {
       ++tokPos;
-      finishToken(_bin1, str_pipe_pipe);
+      finishToken(_bin1, LogicalOperator.OR);
     } else if (nextChar === 61) {
       ++tokPos;
-      finishToken(_assign, str_pipe_eq);
+      finishToken(_assign, AssignmentOperator.pipe);
     } else {
-      finishToken(_bin3, str_pipe);
+      finishToken(_bin3, BinaryOperator.pipe);
     }
     tokRegexpAllowed = true;
   }
@@ -1046,12 +1067,12 @@
     nextChar = input.charCodeAt(tokPos);
     if (nextChar === 38) {
       ++tokPos;
-      finishToken(_bin2, str_amp_amp);
+      finishToken(_bin2, LogicalOperator.AND);
     } else if (nextChar === 61) {
       ++tokPos;
-      finishToken(_assign, str_amp_eq);
+      finishToken(_assign, AssignmentOperator.amp);
     } else {
-      finishToken(_bin5, str_amp);
+      finishToken(_bin5, BinaryOperator.amp);
     }
     tokRegexpAllowed = true;
   }
@@ -1061,9 +1082,9 @@
     nextChar = input.charCodeAt(tokPos);
     if (nextChar === 61) {
       ++tokPos;
-      finishToken(_assign, str_caret_eq);
+      finishToken(_assign, AssignmentOperator.caret);
     } else {
-      finishToken(_bin4, str_caret);
+      finishToken(_bin4, BinaryOperator.caret);
     }
     tokRegexpAllowed = true;
   }
@@ -1073,12 +1094,12 @@
     nextChar = input.charCodeAt(tokPos);
     if (nextChar === 43) {
       ++tokPos;
-      finishToken(_incdec, str_plus_plus);
+      finishToken(_incdec, UpdateOperator.increment);
     } else if (nextChar === 61) {
       ++tokPos;
-      finishToken(_assign, str_plus_eq);
+      finishToken(_assign, AssignmentOperator.plus);
     } else {
-      finishToken(_plusmin, str_plus);
+      finishToken(_plusmin, UnaryOperator.plus);
     }
     tokRegexpAllowed = true;
   }
@@ -1088,12 +1109,12 @@
     nextChar = input.charCodeAt(tokPos);
     if (nextChar === 45) {
       ++tokPos;
-      finishToken(_incdec, str_min_min);
+      finishToken(_incdec, UpdateOperator.decrement);
     } else if (nextChar === 61) {
       ++tokPos;
-      finishToken(_assign, str_min_eq);
+      finishToken(_assign, AssignmentOperator.minus);
     } else {
-      finishToken(_plusmin, str_min);
+      finishToken(_plusmin, UnaryOperator.minus);
     }
     tokRegexpAllowed = true;
   }
@@ -1105,17 +1126,17 @@
     if (nextChar === 60) {
       if (input.charCodeAt(tokPos + 1) === 61) {
         tokPos += 2;
-        finishToken(_assign, str_lt_lt_eq);
+        finishToken(_assign, AssignmentOperator.left_shift);
       } else {
         ++tokPos;
-        finishToken(_bin8, str_lt_lt);
+        finishToken(_bin8, BinaryOperator.left_shift);
       }
     } else {
       if (nextChar === 61) {
         ++tokPos;
-        finishToken(_bin8, str_lt_eq);
+        finishToken(_bin8, BinaryOperator.lt_eq);
       } else {
-        finishToken(_bin8, str_lt);
+        finishToken(_bin8, BinaryOperator.lt);
       }
     }
     tokRegexpAllowed = true;
@@ -1130,26 +1151,26 @@
 
       if (nextChar === 61) {
         tokPos += 2;
-        finishToken(_assign, str_gt_gt_eq);
+        finishToken(_assign, AssignmentOperator.right_shift);
       } else if (nextChar === 62) {
         nextChar = input.charCodeAt(tokPos + 2);
         if (nextChar === 61) {
           tokPos += 3;
-          finishToken(_assign, str_gt_gt_gt_eq);
+          finishToken(_assign, AssignmentOperator.zero_fill_right_shift);
         } else {
           tokPos += 2;
-          finishToken(_bin8, str_gt_gt_gt);
+          finishToken(_bin8, BinaryOperator.zero_fill_right_shift);
         }
       } else {
       ++tokPos;
-        finishToken(_bin8, str_gt_gt);
+        finishToken(_bin8, BinaryOperator.right_shift);
       }
     } else {
       if (nextChar === 61) {
         ++tokPos;
-        finishToken(_bin8, str_gt_eq);
+        finishToken(_bin8, BinaryOperator.gt_eq);
       } else {
-        finishToken(_bin8, str_gt);
+        finishToken(_bin8, BinaryOperator.gt);
       }
     }
     tokRegexpAllowed = true;
@@ -1161,13 +1182,13 @@
     if (nextChar === 61) {
       if (input.charCodeAt(tokPos+1) === 61) {
         tokPos += 2;
-        finishToken(_bin6, str_excl_eq_eq);
+        finishToken(_bin6, BinaryOperator.ex_eq_eq);
       } else {
       ++tokPos;
-        finishToken(_bin6, str_excl_eq);
+        finishToken(_bin6, BinaryOperator.ex_eq);
       }
     } else {
-      finishToken(_prefix, str_excl);
+      finishToken(_prefix, UnaryOperator.ex);
     }
     tokRegexpAllowed = true;
   }
@@ -1179,19 +1200,19 @@
       ++tokPos;
       if (input.charCodeAt(tokPos) === 61) {
         ++tokPos;
-        finishToken(_bin6, str_eq_eq_eq);
+        finishToken(_bin6, BinaryOperator.eq_eq_eq);
       } else {
-        finishToken(_bin6, str_eq_eq);
+        finishToken(_bin6, BinaryOperator.eq_eq);
       }
     } else {
-      finishToken(_eq, str_eq);
+      finishToken(_eq, AssignmentOperator.eq);
     }
     tokRegexpAllowed = true;
   }
 
   function readToken_tilde() {
     ++tokPos;
-    finishToken(_prefix, str_tilde);
+    finishToken(_prefix, UnaryOperator.tilde);
     tokRegexpAllowed = true;
   }
 
@@ -2284,7 +2305,7 @@
 
     if (curTokType.binop !== 0 && curTokType.binop > minTokType.binop && (!noIn || tokType !== _in)) {
 
-      if(tokVal === str_amp_amp || tokVal === str_pipe_pipe) {
+      if(tokVal === LogicalOperator.AND || tokVal === LogicalOperator.OR) {
         node = new LogicalExpression();
       } else {
         node = new BinaryExpression();
@@ -2486,7 +2507,7 @@
     };
 
   function parseObj() {
-    var node = new ObjectExpression(), sawGetSet = false;
+    var node = new ObjectExpression();
     var flags = 0; // SAW A GET/SET | IS A GET/SET
     next();
 
