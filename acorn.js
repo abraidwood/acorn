@@ -454,7 +454,6 @@
     this.defaults = [];
     this.rest = null;
     this.body = null;
-    this.generator = false;
     this.expression = false;
   }
 
@@ -465,9 +464,14 @@
     this.defaults = [];
     this.rest = null;
     this.body = null;
-    this.generator = false;
     this.expression = false;
   }
+
+  var PropertyKinds = {
+    'init': new String('init'),
+    'get': new String('get'),
+    'set': new String('set')
+  };
 
   var AssignmentOperator = {
       'eq'                    : new String('='),
@@ -567,9 +571,23 @@
   // continue jumps to that label.
 
   function keyword_t(word) {
-    this.keyword = word;
-    //this.beforeExpr = false;  // again it's faster if this is left in...
+    this.keyword = new String(word);
     this.isLoop = false;
+  }
+  function binop_t(n) {
+    this.binop = n;
+  }
+  function binop_pp_t(n) {
+    this.binop = n;
+    this.isAssign = false;
+    this.prefix = false;
+    this.postfix = false;
+    this.isUpdate = false;
+  }
+  function prefix_t() {
+    this.beforeExpr = false;
+    this.binop = 0;
+    this.prefix = false;
   }
 
   var _break = new keyword_t('break');
@@ -596,41 +614,23 @@
 
   // The keywords that denote values.
 
-  function av_t(word) {
-    this.keyword = word;
-    //this.beforeExpr = false;
-    this.isLoop = false;
-    //this.atomValue = void(0); // leave in although unused as it makes things much faster?
-  }
-
-  var _null = new av_t('null'); _null.atomValue = null;
-  var _true = new av_t('true'); _true.atomValue = true;
-  var _false = new av_t('false'); _false.atomValue = false;
+  var _null = new keyword_t('null');
+  var _true = new keyword_t('true');
+  var _false = new keyword_t('false');
 
   // Some keywords are treated as regular operators. `in` sometimes
   // (when parsing `for`) needs to be tested against specifically, so
   // we assign a variable name to it for quick comparing.
 
-  function keyword_binop_t() {
-    //
-    //this.beforeExpr = false;
-    this.binop = 0;
-  }
 
-  var _in = new keyword_binop_t('in'); _in.binop = 7;
+  var _in = new binop_t(7);
 
-  function prefix_t() {
-   // this.keyword = word;
-    this.beforeExpr = false;
-    this.binop = 0;
-    this.prefix = false;
-  }
 
   //
-  var _void = new prefix_t('void'); _void.prefix = true;
-  var _delete = new prefix_t('delete'); _delete.prefix = true;
-  var _typeof = new prefix_t('typeof'); _typeof.prefix = true;
-  var _instanceof = new keyword_binop_t('instanceof'); _instanceof.binop = 7;
+  var _void = new prefix_t(); _void.prefix = true;
+  var _delete = new prefix_t(); _delete.prefix = true;
+  var _typeof = new prefix_t(); _typeof.prefix = true;
+  var _instanceof = new binop_t(7);
 
   // Punctuation token types. Again, the `type` property is purely for debugging.
 
@@ -661,17 +661,6 @@
   // `isAssign` marks all of `=`, `+=`, `-=` etcetera, which act as
   // binary operators with a very low precedence, that should result
   // in AssignmentExpression nodes.
-
-  function binop_t(n) {
-    this.binop = n;
-  }
-  function binop_pp_t(n) {
-    this.binop = n;
-    this.isAssign = false;
-    this.prefix = false;
-    this.postfix = false;
-    this.isUpdate = false;
-  }
 
   var _slash = new binop_pp_t(10);
   var _eq = new binop_pp_t(0); _eq.isAssign = true;
@@ -1588,10 +1577,13 @@
         ++tokPos;
         var esc = readHexChar(4);
         var escStr = String.fromCharCode(esc);
-        if (!escStr) raise(tokPos - 1, "Invalid Unicode escape");
-        if (!identifierFn(esc))
+        if (escStr === '') {
+          raise(tokPos - 1, "Invalid Unicode escape");
+        } else if (identifierFn(esc) === false) {
           raise(tokPos - 4, "Invalid Unicode escape");
-        word += escStr;
+        } else {
+          word += escStr;
+        }
       } else {
         break;
       }
@@ -1652,7 +1644,7 @@
 
     var word = readWord_n();
     var type = _name;
-    if (!containsEsc) {
+    if (word.length > 1 && containsEsc === false) {
       type = isKeyword(word, type);
       if(strict && type === _name && isStrictReservedWord(word)) {
         raise(tokStart, "The keyword '" + word + "' is reserved");
@@ -1667,7 +1659,7 @@
 
     var word = readWord_n();
     var type = _name;
-    if (!containsEsc) {
+    if (word.length > 1 && containsEsc === false) {
       type = isKeyword(word, type);
       if(type === _name) {
         if ((options.ecmaVersion === 3 ? isReservedWord3 : isReservedWord5)(word))
@@ -1743,8 +1735,8 @@
       (tokType === _eof || tokType === _braceR || newline.test(input.substring(lastEnd, tokStart)));
   }
 
-  function canInsertSemicolon() {
-    return tokType === _eof || tokType === _braceR || newline.test(input.substring(lastEnd, tokStart));
+  function cannotInsertSemicolon() {
+    return tokType !== _eof && tokType !== _braceR && !newline.test(input.substring(lastEnd, tokStart));
   }
 
   function not_semicolon() {
@@ -1820,7 +1812,11 @@
     return node;
   }
 
-  var loopLabel = {kind: "loop"}, switchLabel = {kind: "switch"};
+  var str_loop = new String('loop');
+  var str_switch = new String('switch');
+
+  var loopLabel = {kind: str_loop};
+  var switchLabel = {kind: str_switch};
 
   // Parse a single statement.
   //
@@ -1837,7 +1833,7 @@
     for (; i < leni; ++i) {
       var lab = labels[i];
       if (label === null || lab.name === label.name) {
-        if (lab.kind != null && (isBreak || lab.kind === "loop")) break;
+        if (lab.kind != null && (isBreak || lab.kind === str_loop)) break;
         if (isBreak) break;
       }
     }
@@ -1913,7 +1909,7 @@
     if (tokType === _var) {
       next();
       init = parseVar(true);
-      if (init.declarations.length === 1 && eat(_in)) {
+      if (init.declarations.length === 1 && eat(_in) === true) {
         node = parse_ForInStatement();
         node.left = init;
       } else {
@@ -1923,7 +1919,7 @@
       return node;
     }
     init = parseExpression(true);
-    if (eat(_in)) {
+    if (eat(_in) === true) {
       checkLVal(init);
       node = parse_ForInStatement();
       node.left = init;
@@ -1937,7 +1933,8 @@
   function parse_Function() {
     var node = new FunctionDeclaration();
     next();
-    return parseFunction(node, true);
+    if(tokType !== _name) unexpected();
+    return parseFunction(node);
   }
 
   function parse_IfStatement() {
@@ -1945,23 +1942,28 @@
     next();
     node.test = parseParenExpression();
     node.consequent = parseStatement();
-    if(eat(_else)) {
+    if(eat(_else) === true) {
       node.alternate = parseStatement();
     }
     return node;
   }
 
-  function parse_ReturnStatement() {
-    var node = new ReturnStatement();
-    if (!inFunction) raise(tokStart, "'return' outside of function");
-    next();
-
     // In `return` (and `break`/`continue`), the keywords with
     // optional arguments, we eagerly look for a semicolon or the
     // possibility to insert one.
 
-    if (not_semicolon()) { node.argument = parseExpression(false); semicolon(); }
-    return node;
+  function parse_ReturnStatement() {
+    var node = new ReturnStatement();
+    if (inFunction) {
+      next();
+      if (not_semicolon()) {
+        node.argument = parseExpression(false);
+        semicolon();
+      }
+      return node;
+    } else {
+      raise(tokStart, "'return' outside of function");
+    }
   }
 
   function parse_SwitchStatement() {
@@ -1976,22 +1978,28 @@
     // nodes. `cur` is used to keep the node that we are currently
     // adding statements to.
 
-    for (;tokType != _braceR;) {
-      if (tokType === _case) {
+    for (;;) {
+      if (tokType === _braceR) {
+        break;
+
+      } else if (tokType === _case) {
         node.cases.push(cur = new SwitchCase());
         next();
         cur.test = parseExpression(false);
         expect(_colon);
 
       } else if (tokType === _default) {
-        node.cases.push(cur = new SwitchCase());
-        next();
-        if (sawDefault) raise(lastStart, "Multiple default clauses");
-        sawDefault = true;
-        expect(_colon);
+        if (sawDefault) {
+          raise(lastStart, "Multiple default clauses");
+        } else {
+          sawDefault = true;
+          node.cases.push(cur = new SwitchCase());
+          next();
+          expect(_colon);
+        }
 
       } else {
-        if (!cur) unexpected();
+        if (cur === null) unexpected();
         cur.consequent.push(parseStatement());
       }
     }
@@ -2015,7 +2023,8 @@
     var node = new TryStatement();
     next();
     node.block = parse_BlockStatement();
-    while (tokType === _catch) {
+
+    if (tokType === _catch) {
       var clause = new CatchClause();
       next();
       expect(_parenL);
@@ -2026,12 +2035,14 @@
       clause.body = parse_BlockStatement();
       node.handler = clause;
     }
-    if(eat(_finally)) {
+
+    if(eat(_finally) === true) {
       node.finalizer = parse_BlockStatement();
     }
-    if (!node.handler && !node.finalizer)
+
+    if (node.handler === null && node.finalizer === null)
       raise(tokPos, "Missing catch or finally clause");
-    node.type = "TryStatement";
+
     return node;
   }
 
@@ -2073,10 +2084,10 @@
   // next token is a colon and the expression was a simple
   // Identifier node, we switch to interpreting it as a label.
 
-  function parseStatement_default() {
+  function parse_maybeLabeledStatement() {
     var starttype = tokType, i, node = null;
     var maybeName = tokVal, expr = parseExpression(false);
-    if (starttype === _name && expr instanceof Identifier && eat(_colon)) {
+    if (starttype === _name && expr instanceof Identifier && eat(_colon) === true) {
       node = new LabeledStatement()
       for (var i = 0, leni = labels.length; i < leni; ++i)
         if (labels[i].name === maybeName) raise(tokPos, "Label '" + maybeName + "' is already declared");
@@ -2085,10 +2096,10 @@
         case _do:
         case _for:
         case _while:
-          label.kind = 'loop';
+          label.kind = str_loop;
           break;
         case _switch:
-          label.kind = 'switch';
+          label.kind = str_switch;
           break;
       }
       labels.push(label);
@@ -2101,6 +2112,22 @@
       semicolon();
     }
     return node;
+
+  }
+
+  function parse_ExpressionStatement() {
+    var node = new ExpressionStatement();
+    node.expression = parseExpression(false);
+    semicolon();
+    return node;
+  }
+
+  function parseStatement_default() {
+    if(tokType === _name) {
+      return parse_maybeLabeledStatement();
+    } else {
+      return parse_ExpressionStatement();
+    }
   }
 
   function parseStatement() {
@@ -2126,9 +2153,9 @@
       case _with: return parse_WithStatement();
       case _braceL: return parse_BlockStatement();
       case _semi: return parse_EmptyStatement();
+
       case _slash:
         readToken_forceRegexp();
-        return parseStatement_default();
 
       default:
         return parseStatement_default();
@@ -2150,18 +2177,19 @@
   // strict"` declarations when `allowStrict` is true (used for
   // function bodies).
 
-  function parse_BlockStatement(allowStrict) {
+  function parse_BlockStatement() {
     var node = new BlockStatement(), strict = false, oldStrict;
     expect(_braceL);
-    if(!eat(_braceR)) {
-      do {
+    if(eat(_braceR) === false) {
+      for(;;) {
         var stmt = parseStatement();
         node.body.push(stmt);
         if (isUseStrict(stmt)) {
           oldStrict = strict;
           setStrict(strict = true);
         }
-      } while (!eat(_braceR))
+        if(eat(_braceR) === true) {break;}
+      }
     }
     if (strict && !oldStrict) setStrict(false);
     return node;
@@ -2203,11 +2231,11 @@
       decl.id = parse_Identifier();
       if (strict && isStrictBadIdWord(decl.id.name))
         raise(tokPos, "Binding " + decl.id.name + " in strict mode");
-      if(eat(_eq)) {
+      if(eat(_eq) === true) {
         decl.init = parseExpression_noComma(noIn);
       }
       node.declarations.push(decl);
-      if (!eat(_comma)) break;
+      if (eat(_comma) === false) break;
     }
     return node;
   }
@@ -2240,7 +2268,9 @@
     if (tokType === _comma) {
       var node = new SequenceExpression();
       node.expressions.push(expr);
-      while (eat(_comma)) node.expressions.push(parseMaybeAssign(noIn));
+      while (eat(_comma) === true) {
+        node.expressions.push(parseMaybeAssign(noIn));
+      }
       return node;
     }
     return expr;
@@ -2267,7 +2297,7 @@
 
   function parseMaybeConditional(noIn) {
     var expr = parseExprOps(noIn);
-    if (eat(_question)) {
+    if (eat(_question) === true) {
       var node = new ConditionalExpression();
       node.test = expr;
       node.consequent = parseExpression_noComma(false);
@@ -2327,13 +2357,13 @@
         next();
         node.argument = parseMaybeUnary(noIn);
         if (strict && node.operator === "delete" &&
-               node.argument.type === "Identifier")
+               node.argument instanceof Identifier)
         raise(tokPos, "Deleting local variable in strict mode");
       }
       return node;
     } else {
       var expr = parseExprSubscripts();
-      while (tokType.postfix && !canInsertSemicolon()) {
+      while (tokType.postfix && cannotInsertSemicolon()) {
         node = new UpdateExpression();
         node.operator = tokVal;
         node.prefix = false;
@@ -2354,33 +2384,38 @@
 
   function parseSubscripts(base) {
     var node;
-    if (eat(_dot)) {
+    if (eat(_dot) === true) {
       node = new MemberExpression_dot(base);
       node.property = parse_Identifier_liberal();
       return parseSubscripts(node);
-    } else if (eat(_bracketL)) {
+
+    } else if (eat(_bracketL) === true) {
       node = new MemberExpression_bracketL(base);
       node.property = parseExpression(false);
       expect(_bracketR);
       return parseSubscripts(node);
-    } else if (eat(_parenL)) {
+
+    } else if (eat(_parenL) === true) {
       node = new CallExpression(base);
-      parseExprList(node.arguments, _parenR);
+      parse_ExpressionList(node.arguments);
       return parseSubscripts(node);
+
     } else return base;
   }
 
   function parseSubscripts_nocalls(base) {
     var node;
-    if (eat(_dot)) {
+    if (eat(_dot) === true) {
       node = new MemberExpression_dot(base);
       node.property = parse_Identifier_liberal();
       return parseSubscripts_nocalls(node);
-    } else if (eat(_bracketL)) {
+
+    } else if (eat(_bracketL) === true) {
       node = new MemberExpression_bracketL(base);
       node.property = parseExpression(false);
       expect(_bracketR);
       return parseSubscripts_nocalls(node);
+
     } else return base;
   }
 
@@ -2446,14 +2481,14 @@
   function parse_ArrayExpression() {
     var node = new ArrayExpression();
     next();
-    parseArrayExprList(node.elements, _bracketR);
+    parse_ArrayExpressionList(node.elements);
     return node;
   }
 
   function parse_FunctionExpression() {
     var node = new FunctionExpression();
     next();
-    return parseFunction(node, false);
+    return parseFunction(node);
   }
 
   function parseExprAtom() {
@@ -2485,29 +2520,23 @@
     var node = new NewExpression();
     next();
     node.callee = parseSubscripts_nocalls(parseExprAtom(false));
-    if (eat(_parenL)) parseExprList(node.arguments, _parenR);
+    if (eat(_parenL) === true) parse_ExpressionList(node.arguments);
     return node;
   }
 
   // Parse an object literal.
-
-    var PropertyKinds = {
-        'init': new String('init'),
-        'get': new String('get'),
-        'set': new String('set')
-    };
 
   function parse_ObjectExpression() {
     var node = new ObjectExpression();
     var flags = 0; // SAW A GET/SET | IS A GET/SET
     next();
 
-    if (!eat(_braceR)) {
+    if (eat(_braceR) === false) {
       for(;;) {
         var prop = new ObjectExpressionProp();
         prop.key = parsePropertyName();
         flags &= 2;
-        if (eat(_colon)) {
+        if (eat(_colon) === true) {
           prop.value = parseExpression_noComma(false);
           prop.kind = PropertyKinds.init;
         } else if (options.ecmaVersion >= 5 && prop.key instanceof Identifier) {
@@ -2515,14 +2544,14 @@
             flags = 3;
             prop.kind = PropertyKinds.get;
             prop.key = parsePropertyName();
-            if (!tokType === _parenL) unexpected();
-            prop.value = parseFunction(new FunctionExpression(), false);
+            if (tokType !== _parenL) unexpected();
+            prop.value = parseFunction(new FunctionExpression());
           } else if (prop.key.name === "set") {
             flags = 3;
             prop.kind = PropertyKinds.set;
             prop.key = parsePropertyName();
-            if (!tokType === _parenL) unexpected();
-            prop.value = parseFunction(new FunctionExpression(), false);
+            if (tokType !== _parenL) unexpected();
+            prop.value = parseFunction(new FunctionExpression());
           } else unexpected();
         } else unexpected();
 
@@ -2545,34 +2574,34 @@
 
         node.properties.push(prop);
 
-        if(eat(_braceR)) break;
+        if(eat(_braceR) === true) break;
 
         expect(_comma);
 
-        if(options.allowTrailingCommas && eat(_braceR)) break;
+        if(options.allowTrailingCommas && eat(_braceR) === true) break;
       }
     }
     return node;
   }
 
   function parsePropertyName() {
-    if (tokType === _num || tokType === _string) return parseExprAtom();
-    return parse_Identifier_liberal();
+    if (tokType === _string || tokType === _num) {
+      return parseExprAtom();
+    } else {
+      return parse_Identifier_liberal();
+    }
   }
 
-  // Parse a function declaration or literal (depending on the
-  // `isStatement` parameter).
-
-  function parseFunction(node, isStatement) {
+  // Parse a function declaration or literal
+  function parseFunction(node) {
     if (tokType === _name) node.id = parse_Identifier();
-    else if (isStatement) unexpected();
 
     expect(_parenL);
 
-    if(!eat(_parenR)) {
+    if(eat(_parenR) === false) {
       for(;;) {
         node.params.push(parse_Identifier());
-        if(eat(_parenR)) {break;}
+        if(eat(_parenR) === true) {break;}
         expect(_comma);
       }
     }
@@ -2606,28 +2635,33 @@
   // nothing in between them to be parsed as `null` (which is needed
   // for array literals).
 
-  function parseArrayExprList(elts, close) {
-    if(!eat(close)) {
+  function parse_ArrayExpressionList(list) {
+    if(eat(_bracketR) === false) {
       for(;;) {
-        if (tokType === _comma) elts.push(null);
-        else elts.push(parseExpression_noComma(false));
+        if (tokType === _comma) {
+          list.push(null);
+        } else {
+          list.push(parseExpression_noComma(false));
+        }
 
-        if(eat(close)) {break;}
+        if(eat(_bracketR) === true) return;
 
         expect(_comma);
-        if (options.allowTrailingCommas && eat(close)) break;
+
+        if (options.allowTrailingCommas && eat(_bracketR) === true) return;
       }
     }
   }
 
-  function parseExprList(elts, close) {
-    if(!eat(close)) {
+  function parse_ExpressionList(list) {
+    if(eat(_parenR) === false) {
       for(;;) {
-        elts.push(parseExpression_noComma(false));
-
-        if(eat(close)) {break;}
-
-        expect(_comma);
+        list.push(parseExpression_noComma(false));
+        if(eat(_parenR) === true) {
+          return;
+        } else {
+          expect(_comma);
+        }
       }
     }
   }
@@ -2645,7 +2679,11 @@
 
   function parse_Identifier() {
     var node = new Identifier();
-    node.name = tokType === _name ? tokVal : unexpected();
+    if(tokType === _name) {
+      node.name = tokVal;
+    } else {
+      unexpected();
+    }
     next();
     return node;
   }
