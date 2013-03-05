@@ -764,13 +764,13 @@
 
   var isKeyword = function(str, type) {
     switch (str.length) {
-           case 4:
+      case 4:
           switch (str) {
               case "null": return _null;
               case "else": tokRegexpAllowed = false; return _else;
               case "true": return _true;
               case "this": return _this;
-              case "case": tokRegexpAllowed = false; return _case;
+              case "case": tokRegexpAllowed = true; return _case;
               case "with": return _with;
               case "void": return _void;
           }
