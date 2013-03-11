@@ -42,6 +42,8 @@
   }
 
   function misMatch(exp, act) {
+
+    if(typeof(exp) === 'string' && act instanceof String && act.valueOf() === exp) {return}
     if (!exp || !act || (typeof exp != "object") || (typeof act != "object")) {
       if (exp !== act) return ppJSON(exp) + " !== " + ppJSON(act);
     } else if (exp.splice) {

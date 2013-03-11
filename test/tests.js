@@ -6,6 +6,133 @@ if (typeof exports != "undefined") {
   var testFail = require("./driver.js").testFail;
 }
 
+test("4 + 5 << (6)", {
+  type: "Program",
+  body: [{
+    type: 'ExpressionStatement',
+    expression: {
+        type: 'BinaryExpression',
+        operator: '<<',
+        left: {
+            type: 'BinaryExpression',
+            operator: '+',
+            left: {
+                type: 'Literal',
+                value: 4,
+                raw: '4',
+                loc: {
+                    start: { line: 1, column: 0 },
+                    end: { line: 1, column: 1 }
+                }
+            },
+            right: {
+                type: 'Literal',
+                value: 5,
+                raw: '5',
+                loc: {
+                    start: { line: 1, column: 4 },
+                    end: { line: 1, column: 5 }
+                }
+            },
+            loc: {
+                start: { line: 1, column: 0 },
+                end: { line: 1, column: 5 }
+            }
+        },
+        right: {
+            type: 'Literal',
+            value: 6,
+            raw: '6',
+            loc: {
+                start: { line: 1, column: 10 },
+                end: { line: 1, column: 11 }
+            }
+        },
+        loc: {
+            start: { line: 1, column: 0 },
+            end: { line: 1, column: 12 }
+        }
+    },
+    loc: {
+        start: { line: 1, column: 0 },
+        end: { line: 1, column: 12 }
+    }
+  }]
+});
+
+test("42 /* the * answer */", {
+  type: "Program",
+  body: [{
+      type: 'ExpressionStatement',
+      expression: {
+          type: 'Literal',
+          value: 42,
+          raw: '42',
+          loc: {
+              start: { line: 1, column: 0 },
+              end: { line: 1, column: 2 }
+          }
+      },
+      loc: {
+          start: { line: 1, column: 0 },
+          end: { line: 1, column: 21 }
+      }
+  }]
+});
+test("(1) + (2  ) + 3", {
+  type: "Program",
+  body: [
+    {
+    type: 'ExpressionStatement',
+    expression: {
+        type: 'BinaryExpression',
+        operator: '+',
+        left: {
+            type: 'BinaryExpression',
+            operator: '+',
+            left: {
+                type: 'Literal',
+                value: 1,
+                raw: '1',
+                loc: {
+                    start: { line: 1, column: 1 },
+                    end: { line: 1, column: 2 }
+                }
+            },
+            right: {
+                type: 'Literal',
+                value: 2,
+                raw: '2',
+                loc: {
+                    start: { line: 1, column: 7 },
+                    end: { line: 1, column: 8 }
+                }
+            },
+            loc: {
+                start: { line: 1, column: 0 },
+                end: { line: 1, column: 11 }
+            }
+        },
+        right: {
+            type: 'Literal',
+            value: 3,
+            raw: '3',
+            loc: {
+                start: { line: 1, column: 14 },
+                end: { line: 1, column: 15 }
+            }
+        },
+        loc: {
+            start: { line: 1, column: 0 },
+            end: { line: 1, column: 15 }
+        }
+    },
+    loc: {
+        start: { line: 1, column: 0 },
+        end: { line: 1, column: 15 }
+    }
+  }]
+});
 test("this\n", {
   type: "Program",
   body: [
@@ -5949,7 +6076,92 @@ test("0x0", {
   }
 });
 
+test("0x0;", {
+  type: "Program",
+  body: [
+    {
+      type: "ExpressionStatement",
+      expression: {
+        type: "Literal",
+        value: 0,
+        loc: {
+          start: {
+            line: 1,
+            column: 0
+          },
+          end: {
+            line: 1,
+            column: 3
+          }
+        }
+      },
+      loc: {
+        start: {
+          line: 1,
+          column: 0
+        },
+        end: {
+          line: 1,
+          column: 3
+        }
+      }
+    }
+  ],
+  loc: {
+    start: {
+      line: 1,
+      column: 0
+    },
+    end: {
+      line: 1,
+      column: 3
+    }
+  }
+});
 test("0e+100", {
+  type: "Program",
+  body: [
+    {
+      type: "ExpressionStatement",
+      expression: {
+        type: "Literal",
+        value: 0,
+        loc: {
+          start: {
+            line: 1,
+            column: 0
+          },
+          end: {
+            line: 1,
+            column: 6
+          }
+        }
+      },
+      loc: {
+        start: {
+          line: 1,
+          column: 0
+        },
+        end: {
+          line: 1,
+          column: 6
+        }
+      }
+    }
+  ],
+  loc: {
+    start: {
+      line: 1,
+      column: 0
+    },
+    end: {
+      line: 1,
+      column: 6
+    }
+  }
+});
+
+test("0e+100 ", {
   type: "Program",
   body: [
     {
@@ -17063,6 +17275,92 @@ test("a\\u0061", {
   }
 });
 
+test("\\u0061a", {
+  type: "Program",
+  body: [
+    {
+      type: "ExpressionStatement",
+      expression: {
+        type: "Identifier",
+        name: "aa",
+        loc: {
+          start: {
+            line: 1,
+            column: 0
+          },
+          end: {
+            line: 1,
+            column: 7
+          }
+        }
+      },
+      loc: {
+        start: {
+          line: 1,
+          column: 0
+        },
+        end: {
+          line: 1,
+          column: 7
+        }
+      }
+    }
+  ],
+  loc: {
+    start: {
+      line: 1,
+      column: 0
+    },
+    end: {
+      line: 1,
+      column: 7
+    }
+  }
+});
+
+test("\\u0061a ", {
+  type: "Program",
+  body: [
+    {
+      type: "ExpressionStatement",
+      expression: {
+        type: "Identifier",
+        name: "aa",
+        loc: {
+          start: {
+            line: 1,
+            column: 0
+          },
+          end: {
+            line: 1,
+            column: 7
+          }
+        }
+      },
+      loc: {
+        start: {
+          line: 1,
+          column: 0
+        },
+        end: {
+          line: 1,
+          column: 7
+        }
+      }
+    }
+  ],
+  loc: {
+    start: {
+      line: 1,
+      column: 0
+    },
+    end: {
+      line: 1,
+      column: 7
+    }
+  }
+});
+
 test("if (morning) goodMorning()", {
   type: "Program",
   body: [
@@ -26698,3 +26996,6 @@ testFail("(function a(package) { \"use strict\"; })",
 testFail("var this = 10;", "Unexpected token (1:4)");
 
 testFail("throw\n10;", "Illegal newline after throw (1:5)");
+
+testFail('"\\1"; \'use strict\';', "Octal literal in strict mode (1:16)");
+
