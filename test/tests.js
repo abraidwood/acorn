@@ -21818,50 +21818,47 @@ test("try { } catch (e) { }", {
           }
         }
       },
-      handlers: [
-        {
-          type: "CatchClause",
-          param: {
-            type: "Identifier",
-            name: "e",
-            loc: {
-              start: {
-                line: 1,
-                column: 15
-              },
-              end: {
-                line: 1,
-                column: 16
-              }
-            }
-          },
-          guard: null,
-          body: {
-            type: "BlockStatement",
-            body: [],
-            loc: {
-              start: {
-                line: 1,
-                column: 18
-              },
-              end: {
-                line: 1,
-                column: 21
-              }
-            }
-          },
+      handler: {
+        type: "CatchClause",
+        param: {
+          type: "Identifier",
+          name: "e",
           loc: {
             start: {
               line: 1,
-              column: 8
+              column: 15
+            },
+            end: {
+              line: 1,
+              column: 16
+            }
+          }
+        },
+        body: {
+          type: "BlockStatement",
+          body: [],
+          loc: {
+            start: {
+              line: 1,
+              column: 18
             },
             end: {
               line: 1,
               column: 21
             }
           }
+        },
+        loc: {
+          start: {
+            line: 1,
+            column: 8
+          },
+          end: {
+            line: 1,
+            column: 21
+          }
         }
-      ],
+      },
       finalizer: null,
       loc: {
         start: {
@@ -21906,50 +21903,47 @@ test("try { } catch (eval) { }", {
           }
         }
       },
-      handlers: [
-        {
-          type: "CatchClause",
-          param: {
-            type: "Identifier",
-            name: "eval",
-            loc: {
-              start: {
-                line: 1,
-                column: 15
-              },
-              end: {
-                line: 1,
-                column: 19
-              }
-            }
-          },
-          guard: null,
-          body: {
-            type: "BlockStatement",
-            body: [],
-            loc: {
-              start: {
-                line: 1,
-                column: 21
-              },
-              end: {
-                line: 1,
-                column: 24
-              }
-            }
-          },
+      handler: {
+        type: "CatchClause",
+        param: {
+          type: "Identifier",
+          name: "eval",
           loc: {
             start: {
               line: 1,
-              column: 8
+              column: 15
+            },
+            end: {
+              line: 1,
+              column: 19
+            }
+          }
+        },
+        body: {
+          type: "BlockStatement",
+          body: [],
+          loc: {
+            start: {
+              line: 1,
+              column: 21
             },
             end: {
               line: 1,
               column: 24
             }
           }
+        },
+        loc: {
+          start: {
+            line: 1,
+            column: 8
+          },
+          end: {
+            line: 1,
+            column: 24
+          }
         }
-      ],
+      },
       finalizer: null,
       loc: {
         start: {
@@ -21994,50 +21988,47 @@ test("try { } catch (arguments) { }", {
           }
         }
       },
-      handlers: [
-        {
-          type: "CatchClause",
-          param: {
-            type: "Identifier",
-            name: "arguments",
-            loc: {
-              start: {
-                line: 1,
-                column: 15
-              },
-              end: {
-                line: 1,
-                column: 24
-              }
-            }
-          },
-          guard: null,
-          body: {
-            type: "BlockStatement",
-            body: [],
-            loc: {
-              start: {
-                line: 1,
-                column: 26
-              },
-              end: {
-                line: 1,
-                column: 29
-              }
-            }
-          },
+      handler: {
+        type: "CatchClause",
+        param: {
+          type: "Identifier",
+          name: "arguments",
           loc: {
             start: {
               line: 1,
-              column: 8
+              column: 15
+            },
+            end: {
+              line: 1,
+              column: 24
+            }
+          }
+        },
+        body: {
+          type: "BlockStatement",
+          body: [],
+          loc: {
+            start: {
+              line: 1,
+              column: 26
             },
             end: {
               line: 1,
               column: 29
             }
           }
+        },
+        loc: {
+          start: {
+            line: 1,
+            column: 8
+          },
+          end: {
+            line: 1,
+            column: 29
+          }
         }
-      ],
+      },
       finalizer: null,
       loc: {
         start: {
@@ -22082,61 +22073,32 @@ test("try { } catch (e) { say(e) }", {
           }
         }
       },
-      handlers: [
-        {
-          type: "CatchClause",
-          param: {
-            type: "Identifier",
-            name: "e",
-            loc: {
-              start: {
-                line: 1,
-                column: 15
-              },
-              end: {
-                line: 1,
-                column: 16
-              }
+      handler: {
+        type: "CatchClause",
+        param: {
+          type: "Identifier",
+          name: "e",
+          loc: {
+            start: {
+              line: 1,
+              column: 15
+            },
+            end: {
+              line: 1,
+              column: 16
             }
-          },
-          guard: null,
-          body: {
-            type: "BlockStatement",
-            body: [
-              {
-                type: "ExpressionStatement",
-                expression: {
-                  type: "CallExpression",
-                  callee: {
-                    type: "Identifier",
-                    name: "say",
-                    loc: {
-                      start: {
-                        line: 1,
-                        column: 20
-                      },
-                      end: {
-                        line: 1,
-                        column: 23
-                      }
-                    }
-                  },
-                  arguments: [
-                    {
-                      type: "Identifier",
-                      name: "e",
-                      loc: {
-                        start: {
-                          line: 1,
-                          column: 24
-                        },
-                        end: {
-                          line: 1,
-                          column: 25
-                        }
-                      }
-                    }
-                  ],
+          }
+        },
+        body: {
+          type: "BlockStatement",
+          body: [
+            {
+              type: "ExpressionStatement",
+              expression: {
+                type: "CallExpression",
+                callee: {
+                  type: "Identifier",
+                  name: "say",
                   loc: {
                     start: {
                       line: 1,
@@ -22144,10 +22106,26 @@ test("try { } catch (e) { say(e) }", {
                     },
                     end: {
                       line: 1,
-                      column: 26
+                      column: 23
                     }
                   }
                 },
+                arguments: [
+                  {
+                    type: "Identifier",
+                    name: "e",
+                    loc: {
+                      start: {
+                        line: 1,
+                        column: 24
+                      },
+                      end: {
+                        line: 1,
+                        column: 25
+                      }
+                    }
+                  }
+                ],
                 loc: {
                   start: {
                     line: 1,
@@ -22158,31 +22136,41 @@ test("try { } catch (e) { say(e) }", {
                     column: 26
                   }
                 }
-              }
-            ],
-            loc: {
-              start: {
-                line: 1,
-                column: 18
               },
-              end: {
-                line: 1,
-                column: 28
+              loc: {
+                start: {
+                  line: 1,
+                  column: 20
+                },
+                end: {
+                  line: 1,
+                  column: 26
+                }
               }
             }
-          },
+          ],
           loc: {
             start: {
               line: 1,
-              column: 8
+              column: 18
             },
             end: {
               line: 1,
               column: 28
             }
           }
+        },
+        loc: {
+          start: {
+            line: 1,
+            column: 8
+          },
+          end: {
+            line: 1,
+            column: 28
+          }
         }
-      ],
+      },
       finalizer: null,
       loc: {
         start: {
@@ -22227,7 +22215,7 @@ test("try { } finally { cleanup(stuff) }", {
           }
         }
       },
-      handlers: [],
+      handler: null,
       finalizer: {
         type: "BlockStatement",
         body: [
@@ -22384,61 +22372,32 @@ test("try { doThat(); } catch (e) { say(e) }", {
           }
         }
       },
-      handlers: [
-        {
-          type: "CatchClause",
-          param: {
-            type: "Identifier",
-            name: "e",
-            loc: {
-              start: {
-                line: 1,
-                column: 25
-              },
-              end: {
-                line: 1,
-                column: 26
-              }
+      handler: {
+        type: "CatchClause",
+        param: {
+          type: "Identifier",
+          name: "e",
+          loc: {
+            start: {
+              line: 1,
+              column: 25
+            },
+            end: {
+              line: 1,
+              column: 26
             }
-          },
-          guard: null,
-          body: {
-            type: "BlockStatement",
-            body: [
-              {
-                type: "ExpressionStatement",
-                expression: {
-                  type: "CallExpression",
-                  callee: {
-                    type: "Identifier",
-                    name: "say",
-                    loc: {
-                      start: {
-                        line: 1,
-                        column: 30
-                      },
-                      end: {
-                        line: 1,
-                        column: 33
-                      }
-                    }
-                  },
-                  arguments: [
-                    {
-                      type: "Identifier",
-                      name: "e",
-                      loc: {
-                        start: {
-                          line: 1,
-                          column: 34
-                        },
-                        end: {
-                          line: 1,
-                          column: 35
-                        }
-                      }
-                    }
-                  ],
+          }
+        },
+        body: {
+          type: "BlockStatement",
+          body: [
+            {
+              type: "ExpressionStatement",
+              expression: {
+                type: "CallExpression",
+                callee: {
+                  type: "Identifier",
+                  name: "say",
                   loc: {
                     start: {
                       line: 1,
@@ -22446,10 +22405,26 @@ test("try { doThat(); } catch (e) { say(e) }", {
                     },
                     end: {
                       line: 1,
-                      column: 36
+                      column: 33
                     }
                   }
                 },
+                arguments: [
+                  {
+                    type: "Identifier",
+                    name: "e",
+                    loc: {
+                      start: {
+                        line: 1,
+                        column: 34
+                      },
+                      end: {
+                        line: 1,
+                        column: 35
+                      }
+                    }
+                  }
+                ],
                 loc: {
                   start: {
                     line: 1,
@@ -22460,31 +22435,41 @@ test("try { doThat(); } catch (e) { say(e) }", {
                     column: 36
                   }
                 }
-              }
-            ],
-            loc: {
-              start: {
-                line: 1,
-                column: 28
               },
-              end: {
-                line: 1,
-                column: 38
+              loc: {
+                start: {
+                  line: 1,
+                  column: 30
+                },
+                end: {
+                  line: 1,
+                  column: 36
+                }
               }
             }
-          },
+          ],
           loc: {
             start: {
               line: 1,
-              column: 18
+              column: 28
             },
             end: {
               line: 1,
               column: 38
             }
           }
+        },
+        loc: {
+          start: {
+            line: 1,
+            column: 18
+          },
+          end: {
+            line: 1,
+            column: 38
+          }
         }
-      ],
+      },
       finalizer: null,
       loc: {
         start: {
@@ -22571,61 +22556,32 @@ test("try { doThat(); } catch (e) { say(e) } finally { cleanup(stuff) }", {
           }
         }
       },
-      handlers: [
-        {
-          type: "CatchClause",
-          param: {
-            type: "Identifier",
-            name: "e",
-            loc: {
-              start: {
-                line: 1,
-                column: 25
-              },
-              end: {
-                line: 1,
-                column: 26
-              }
+      handler: {
+        type: "CatchClause",
+        param: {
+          type: "Identifier",
+          name: "e",
+          loc: {
+            start: {
+              line: 1,
+              column: 25
+            },
+            end: {
+              line: 1,
+              column: 26
             }
-          },
-          guard: null,
-          body: {
-            type: "BlockStatement",
-            body: [
-              {
-                type: "ExpressionStatement",
-                expression: {
-                  type: "CallExpression",
-                  callee: {
-                    type: "Identifier",
-                    name: "say",
-                    loc: {
-                      start: {
-                        line: 1,
-                        column: 30
-                      },
-                      end: {
-                        line: 1,
-                        column: 33
-                      }
-                    }
-                  },
-                  arguments: [
-                    {
-                      type: "Identifier",
-                      name: "e",
-                      loc: {
-                        start: {
-                          line: 1,
-                          column: 34
-                        },
-                        end: {
-                          line: 1,
-                          column: 35
-                        }
-                      }
-                    }
-                  ],
+          }
+        },
+        body: {
+          type: "BlockStatement",
+          body: [
+            {
+              type: "ExpressionStatement",
+              expression: {
+                type: "CallExpression",
+                callee: {
+                  type: "Identifier",
+                  name: "say",
                   loc: {
                     start: {
                       line: 1,
@@ -22633,10 +22589,26 @@ test("try { doThat(); } catch (e) { say(e) } finally { cleanup(stuff) }", {
                     },
                     end: {
                       line: 1,
-                      column: 36
+                      column: 33
                     }
                   }
                 },
+                arguments: [
+                  {
+                    type: "Identifier",
+                    name: "e",
+                    loc: {
+                      start: {
+                        line: 1,
+                        column: 34
+                      },
+                      end: {
+                        line: 1,
+                        column: 35
+                      }
+                    }
+                  }
+                ],
                 loc: {
                   start: {
                     line: 1,
@@ -22647,31 +22619,41 @@ test("try { doThat(); } catch (e) { say(e) } finally { cleanup(stuff) }", {
                     column: 36
                   }
                 }
-              }
-            ],
-            loc: {
-              start: {
-                line: 1,
-                column: 28
               },
-              end: {
-                line: 1,
-                column: 38
+              loc: {
+                start: {
+                  line: 1,
+                  column: 30
+                },
+                end: {
+                  line: 1,
+                  column: 36
+                }
               }
             }
-          },
+          ],
           loc: {
             start: {
               line: 1,
-              column: 18
+              column: 28
             },
             end: {
               line: 1,
               column: 38
             }
           }
+        },
+        loc: {
+          start: {
+            line: 1,
+            column: 18
+          },
+          end: {
+            line: 1,
+            column: 38
+          }
         }
-      ],
+      },
       finalizer: {
         type: "BlockStatement",
         body: [
