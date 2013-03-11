@@ -393,9 +393,9 @@
     this.property = null;
     this.computed = true;
   }
-  function CallExpression(c) {
+  function CallExpression(callee) {
     this.type = "CallExpression";
-    this.callee = c;
+    this.callee = callee;
     this.arguments = [];
   }
 
@@ -1324,14 +1324,14 @@
       if (tokPos >= inputLen || ch === 10 || ch === 13 || ch === 8232 || ch === 8329) {
         raise(start, "Unterminated regular expression");
       }
-      if (flags & 1) { // escaped
+      if ((flags & 1) !== 0) { // escaped
         flags &= 2; // escaped = false
       } else {
         if (ch === 91) { // '['
           flags |= 2; // inclass = true
-        } else if (ch === 93 && flags & 2) {
+        } else if (ch === 93 && (flags & 2) !== 0) {
           flags &= 1; // inclass = false
-        } else if (ch === 47 && flags & 2 ^ 2) { // inclass == false
+        } else if (ch === 47 && (flags & 2 ^ 2) !== 0) { // inclass == false
           break;
         } else if (ch === 92) {
           flags |= 1; // escaped = true
@@ -1393,7 +1393,7 @@
 
     while(tokPos < inputLen) {
       if(code === 46) { // '.'
-        if(flags & 1) {
+        if((flags & 1) !== 0) {
           break;
         } else {
           flags |= 1;
@@ -1403,14 +1403,14 @@
           break;
         }
       } else if (code === 101 || code === 69) { // 'eE'
-        if(flags & 2) {
+        if((flags & 2) !== 0) {
           raise(tokPos, "Identifier directly after number");
           break;
         } else {
           flags |= 3;
         }
       } else if(isIdentifierStart(input.charCodeAt(tokPos))) {
-        if(flags & 2) {
+        if((flags & 2) !== 0) {
           raise(start, "Invalid number");
         } else {
           raise(tokPos, "Identifier directly after number");
@@ -1425,15 +1425,15 @@
       code = input.charCodeAt(++tokPos);
     }
 
-    if(flags & 3 && (prev === 101 || prev === 69 || prev === 43 || prev === 45)) { // 'eE','+-'
+    if((flags & 3) !== 0 && (prev === 101 || prev === 69 || prev === 43 || prev === 45)) { // 'eE','+-'
       raise(start, "Invalid number");
     }
 
-    if(flags & 1) {
+    if((flags & 1) !== 0) {
       code = parseFloat(input.substring(start, tokPos));
     } else if(startCode !== 48 || (tokPos - start) === 1) {
-      code = parseInt(input.substring(start, tokPos),10);
-    } else if (strict || flags & 4) {
+      code = input.substring(start, tokPos) | 0; // this is what parseInt(...,10) does
+    } else if (strict || (flags & 4) !== 0) {
       raise(start, "Invalid number");
     } else {
       code = parseInt(input.substring(start, tokPos), 8);
@@ -2468,13 +2468,8 @@
   }
 
   function parseExprAtom_parenL() {
-    //var tokStartLoc1 = tokStartLoc, tokStart1 = tokStart;
     next();
     var val = parseExpression(false);
-    // if (options.locations) {
-    //   val.loc.start = tokStartLoc1;
-    //   val.loc.end = tokEndLoc;
-    // }
     expect(_parenR);
     return val;
   }
@@ -2559,7 +2554,7 @@
         // each other or with an init property — and in strict mode,
         // init properties are also not allowed to be repeated.
 
-        if (prop.key instanceof Identifier && (strict || flags & 2)) {
+        if (prop.key instanceof Identifier && (strict || (flags & 2) !== 0)) {
           for (var i = 0, leni = node.properties.length; i < leni; ++i) {
             var other = node.properties[i];
             if (other.key.name === prop.key.name) {
